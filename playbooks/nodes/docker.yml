@@ -1,0 +1,14 @@
+---
+
+- hosts: all
+  become: True
+  tasks:
+    - name: install docker
+      apt: name=docker.io
+    - name: Add the current user to the docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+    - name: reset connection to allow user changes to affect 'current login user'
+      meta: reset_connection

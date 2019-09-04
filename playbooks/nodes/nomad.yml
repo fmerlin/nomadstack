@@ -1,0 +1,38 @@
+- hosts: all
+  become: True
+  tasks:
+    - name: Check that the nomad.key exists
+      stat: path=/etc/nomad.key
+      register: stat_result
+    - block:
+      - name: add user nomad
+        user: name=nomad group=docker
+      - name: create directories
+        file: path=/var/lib/nomad state=directory mode=0777 owner=nomad group=docker
+      - name: download nomad
+        get_url: url="{{nomad.url}}/{{nomad.file}}" dest="/tmp/{{nomad.file}}"
+      - name: unarchive nomad
+        unarchive: src="/tmp/{{nomad.file}}" dest=/usr/local/bin/ mode=0755 copy=no
+      - name: install python nomad
+        pip: name=python-nomad
+      - name: copy systemd unit
+        copy: src="../../resources/etc/systemd/system/nomad.service" dest=/etc/systemd/system/nomad.service mode=0755 owner=nomad group=docker
+      - name: copy nomad config
+        template: src="../../templates/etc/nomad.json" dest=/etc/nomad.json  mode=0755 owner=nomad group=docker
+      - name: start nomad
+        systemd: name=nomad state=started daemon_reload=yes
+      - name: bootstrap acl
+        uri: url="http://localhost:{{nomad.port}}/v1/acl/bootstrap" method=PUT return_content=yes body_format=json
+        until: _nomad.status == 200
+        retries: 30
+        delay: 5
+        register: _nomad
+      - name: save root token
+        copy: content="{{_nomad.json.SecretID}}" dest=/etc/nomad.key owner=nomad group=docker mode=0660
+      - name: Set NOMAD_TOKEN
+        lineinfile:
+          dest: /etc/environment
+          state: present
+          regexp: '^NOMAD_TOKEN'
+          line: 'NOMAD_TOKEN={{_nomad.json.SecretID}}'
+      when: not stat_result.stat.exists

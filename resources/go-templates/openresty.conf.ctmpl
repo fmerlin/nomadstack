@@ -1,0 +1,144 @@
+{{- $openresty := or (env "NGINX") "/openresty" -}}
+{{- $server_name := or (env "SERVER") "www" }}
+worker_processes  1;
+error_log  stderr warn;
+pid        /usr/local/openresty/nginx/logs/nginx.pid;
+events {
+    worker_connections  1024;
+}
+env OAUTH;
+env REDIS;
+env RIAK;
+env CONSUL;
+env FLUENTD;
+env NOMAD;
+{{- range $v, $p1 := tree (print $openresty "/geo/") | byKey -}}
+geo ${{ $v }} {
+{{- range $k, $p2 := tree (print $openresty "/geo/" $v "/") | explode -}}
+{{- range $ip := (print $p2 | split ",") }}
+    {{ $ip }}: {{ $k }};
+{{- end -}}
+{{- end }}
+}
+{{- end }}
+http {
+    resolver localhost:8600;
+    lua_code_cache off;
+    lua_package_path "/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua"; # Include Lua libraries
+    lua_shared_dict rp_cache 10M;
+    init_worker_by_lua_file '/usr/local/openresty/lualib/rp/directives/init_worker.lua';
+    log_by_lua_file '/usr/local/openresty/lualib/rp/directives/log.lua';
+    header_filter_by_lua_file '/usr/local/openresty/lualib/rp/directives/header_filter.lua';
+    body_filter_by_lua_file '/usr/local/openresty/lualib/rp/directives/body_filter.lua';
+    proxy_cache_path local levels=1:2 keys_zone=proxy_cache:10m max_size=10g inactive=60m use_temp_path=off;
+    include       mime.types;
+    default_type  application/octet-stream;
+    access_log  off;
+    client_max_body_size 2000M;
+    sendfile        on;
+    keepalive_timeout  65;
+{{range services}}
+{{- $name := .Name -}}
+    upstream {{$name}} {
+        server 127.0.0.1;
+        zone http-{{$name}} 64k;
+        balancer_by_lua_file '/usr/local/openresty/lualib/rp/directives/balancer_http.lua';
+    }
+{{end}}
+    server {
+        server_name {{ $server_name }};
+        listen {{ env "NOMAD_HOST_PORT_http" }};
+        #listen {{ env "NOMAD_HOST_PORT_https" }} ssl;
+        #ssl_certificate {{ $server_name }}.crt;
+        #ssl_certificate_key {{ $server_name }}.key;
+    {{ range $key, $pairs := tree (print $openresty "/endpoints/") | byKey -}}
+    {{- $type := (keyOrDefault  (print $openresty "/endpoints/" $key "/type") "") -}}
+        location /{{ $key }} {
+        {{- if (eq $type "proxy") }}
+            proxy_cache_revalidate on;
+            proxy_cache proxy_cache;
+            set $proxy_to "";
+            set $service "{{ $key }}";
+            access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $proxy_host;
+            proxy_set_header X-Forwarded-For $remote_addr;
+            proxy_set_header X-Request-ID $x_request_id;
+            proxy_pass http://$proxy_to$request_uri;
+        {{- end -}}
+        {{- if (eq $type "uwsgi") }}
+            uwsgi_cache_revalidate on;
+            uwsgi_cache proxy_cache;
+            set $proxy_to "";
+            set $service "{{ $key }}";
+            access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
+            include uwsgi_params;
+            uwsgi_pass $proxy_to;
+        {{- end -}}
+        {{- if (eq $type "file") -}}
+            set $service "{{ $key }}";
+            set $proxy_to "";
+            access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
+            root $proxy_to;
+        {{- end -}}
+        {{- if (eq $type "redis") -}}
+            set $service "{{ $key }}";
+            lua_check_client_abort on;
+            content_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_redis.lua";
+        {{- end }}
+        {{- if (eq $type "fluentd") -}}
+            limit_except POST {
+               deny all;
+            }
+            set $service "{{ $key }}";
+            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_fluentd.lua';
+        {{- end }}
+        }
+    {{- end -}}
+        location /status {
+            add_header Content-Type text/plain;
+            return 200 "OK";
+        }
+        location /signin {
+            access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_signin.lua";
+        }
+        location /metrics {
+            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_metrics.lua';
+        }
+        location /swagger.json {
+            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_swagger.lua';
+        }
+#        location /artifacts {
+#            create_full_put_path on;
+#            autoindex on;
+#            autoindex_exact_size off;
+#            autoindex_localtime on;
+#            charset utf-8;
+#
+#            dav_methods PUT DELETE MKCOL COPY MOVE;
+#            dav_ext_methods PROPFIND OPTIONS;
+#            dav_access user:rw group:rw all:rw;
+#
+#            auth_basic "Restricted";
+#            auth_basic_user_file /etc/nginx/htpasswd;
+#
+#            root /artifacts;
+#        }
+    }
+}
+stream {
+{{ range $port, $name := tree (print $openresty "/tcp/") | byKey -}}
+    upstream {{$name}} {
+        set $service "{{ $name }}";
+        zone tcp-{{$name}} 64k;
+        balancer_by_lua_file '/usr/local/openresty/lualib/rp/directives/balancer_tcp.lua';
+    }
+    server {
+        listen {{ $port }};
+        proxy_pass {{$name}};
+        proxy_connect_timeout 1s;
+    }
+{{end}}
+}

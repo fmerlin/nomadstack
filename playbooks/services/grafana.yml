@@ -1,0 +1,34 @@
+- hosts: localhost
+  tasks:
+    - name: deploy job
+      nomad:
+        Name: "grafana"
+        Datacenters:
+         - "dev"
+        Type: "service"
+        TaskGroups:
+          - Name: "grafana"
+            Tasks:
+            - Name: "grafana"
+              Driver: "docker"
+              Config:
+                image: "grafana/grafana"
+                network_mode: "host"
+                volumes:
+                  - "local:/var/lib/grafana"
+              Resources:
+                CPU: 100
+                MemoryMB: 100
+                Networks:
+                  - MBits: 1
+                    DynamicPorts:
+                    - Label: "grafana"
+                      Value: 3000
+              Services:
+                - Name: "grafana"
+                  Port: "grafana"
+                  Checks:
+                  - Type: "http"
+                    Path: "/api/health"
+                    Interval: 10_000_000_000
+                    Timeout: 2_000_000_000

@@ -1,0 +1,14 @@
+[databases]
+{{range services}}
+{{if in .Tags "postgres"}}{{.Name}} = host={{.Address}} port={{.Port}} dbname={{.Name}}{{end}}
+{{end}}
+
+[pgbouncer]
+pool_mode = session
+listen_port = {{env NOMAD_PORT_pgbouncer}}
+listen_addr = 127.0.0.1
+auth_type = md5
+auth_file = local/users.txt
+logfile = /dev/stdout
+admin_users = gpadmin
+stats_users = stat_collector

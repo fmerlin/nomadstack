@@ -1,0 +1,75 @@
+- hosts: localhost
+  tasks:
+    - name: build docker
+      docker_image:
+        build:
+          path: /vagrant/docker/uwsgi
+        name: nexus.service.consul/paas/uwsgi
+        tag: v1
+        push: yes
+    - name: init consul
+      consul_kv_tree:
+        path: openresty
+        data:
+          endpoints:
+            toto:
+              rules.json:
+                - input:
+                    remote_addr: 0.0.0.0
+                  output:
+                    version: prod
+                    max_req: 100
+                    max_time: 60
+                - output:
+                    version: dev
+                    max_req: 10
+                    max_time: 60
+              type: uwsgi
+              restrictions.json:
+                /app:
+                  - admin
+              versions.json:
+                prod: v1
+                dev: v2
+    - name: deploy job
+      nomad:
+        ID: uwsgi
+        Datacenters: ["dev"]
+        Type: "service"
+        TaskGroups:
+          Name: "uwsgi"
+          Tasks:
+            - Name: "uwsgi"
+              Driver: "docker"
+              Config:
+                image: "nexus.service.consul/paas/uwsgi:v1"
+                network_mode: "host"
+                volumes:
+                  - "local/uwsgi.ini:/app/uwsgi.ini"
+                logging:
+                  type: "fluentd"
+                  config:
+                    fluentd-address: "localhost:24224"
+                    tag: "uwsgi.stderr"
+                    fluentd-async-connect: "true"
+              Resources:
+                CPU: 100
+                MemoryMB: 100
+                Networks:
+                  MBits: 1
+                  DynamicPorts:
+                    Label: "uwsgi"
+              Templates:
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/uwsgi.ini.ctmpl') }}"
+                  destination: "local/uwsgi.ini"
+                  change_mode: "signal"
+                  change_signal: "SIGHUP"
+              Service:
+                Name: "uwsgi"
+                Port: "uwsgi"
+                Checks:
+                  - Type: "script"
+                    Command: "uwsgi_curl"
+                    Args: ["${NOMAD_ADDR_uwsgi}", "/status"]
+                    Interval: "10s"
+                    Timeout: "2s"

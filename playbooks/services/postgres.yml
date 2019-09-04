@@ -1,0 +1,67 @@
+- hosts: localhost
+  tasks:
+    - name: build docker
+      docker_image:
+        build:
+          path: /vagrant/docker/postgres
+        name: nexus.service.consul/paas/uwsgi
+        tag: v1
+        push: yes
+    - name:
+    - name: deploy job
+      nomad:
+        ID: postgres
+        Datacenters: ["dev"]
+        Type: "service"
+        TaskGroups:
+          Name: "postgres"
+          Tasks:
+            - Name: "postgres"
+              Driver: "docker"
+              Config:
+                image: "nexus.service.consul/paas/postgres:v1"
+                network_mode: "host"
+                volumes:
+                  - "local:/var/lib/postgresql/data"
+                logging:
+                  type: "fluentd"
+                  config:
+                    fluentd-address: "localhost:24224"
+                    tag: "postgres"
+                    fluentd-async-connect: "true"
+              Env:
+                POSTGRES_USER: "postgres"
+                POSTGRES_PASSWORD: "{{ postgres_password }}"
+                POSTGRES_DB: "postgres"
+              Resources:
+                CPU: 100
+                MemoryMB: 100
+                Networks:
+                  MBits: 1
+                  DynamicPorts:
+                    Label: "postgres"
+                    Value: 5432
+              Templates:
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/postgres.conf.ctmpl') }}"
+                  destination: "local/postgres.conf"
+                  change_mode: "signal"
+                  change_signal: "SIGHUP"
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pg_hba.conf.ctmpl') }}"
+                  destination: "local/pg_hba.conf"
+                  change_mode: "signal"
+                  change_signal: "SIGHUP"
+              Service:
+                Name: "postgres"
+                Port: "postgres"
+                Checks:
+                  - Type: "script"
+                    Command: "/usr/bin/pg_isready"
+                    Args: ["-h", "localhost", "-U", "postgres"]
+                    Interval: "10s"
+                    Timeout: "2s"
+            - Name: "postgres_exporter"
+              Driver: "exec"
+              Config:
+                command: "local/postgres_exporter_v0.5.1_linux-amd64/postgres_exporter"
+              Artifacts:
+                - Source: "https://github.com/wrouesnel/postgres_exporter/releases/download/v0.5.1/postgres_exporter_v0.5.1_linux-amd64.tar.gz"

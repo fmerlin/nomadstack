@@ -1,0 +1,18 @@
+[Unit]
+Description=consul agent
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=consul
+Group=docker
+LimitNOFILE=1024
+PermissionsStartOnly=true
+ExecStart=/usr/local/bin/consul agent -config-file /etc/consul.json
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGINT
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

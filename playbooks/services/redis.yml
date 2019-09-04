@@ -1,0 +1,41 @@
+- hosts: localhost
+  tasks:
+    - name: deploy job
+      nomad:
+        Name: "redis"
+        Datacenters:
+         - "dev"
+        Type: "service"
+        TaskGroups:
+          - Name: "redis"
+            Tasks:
+            - Name: "redis"
+              Driver: "docker"
+              Config:
+                image: "redis"
+                network_mode: "host"
+                volumes:
+                  - "local:/data"
+                  - "local/redis.conf:/usr/local/etc/redis/redis.conf"
+              Templates:
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/redis.conf.ctmpl') }}"
+                  destination: "local/redis.conf"
+                  change_mode: "signal"
+                  change_signal: "SIGHUP"
+              Resources:
+                CPU: 100
+                MemoryMB: 100
+                Network:
+                  MBits: 1
+                  DynamicPorts:
+                    Label: "redis"
+                    Value: 6379
+              Service:
+                Name: "redis"
+                Port: "redis"
+                Checks:
+                - Type: "script"
+                  Command: "redis-cli"
+                  Args: ["ping"]
+                  Interval: "10s"
+                  Timeout: "2s"

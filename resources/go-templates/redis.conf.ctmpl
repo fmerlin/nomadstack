@@ -1,0 +1,27 @@
+# Hostname: {{env "HOSTNAME"}}
+{{$hostname := env "HOSTNAME"}}
+{{$key := printf "%s%s" "/service/redis/" $hostname}}
+{{with $redis := key $key | parseJSON}}
+{{if $redis}}
+{{if $redis.daemonize}}
+daemonize {{$redis.daemonize}}
+{{else}}
+daemonize no
+{{end}}
+pidfile /var/run/redis.pid
+{{if $redis.port}}
+port {{$redis.port}}
+{{else}}
+port 6379
+{{end}}
+tcp-backlog 511
+timeout 0
+tcp-keepalive 0
+databases 16
+dbfilename dump.rdb
+dir ./
+save 900 1
+save 300 10
+save 60 10000
+{{end}}
+{{end}}

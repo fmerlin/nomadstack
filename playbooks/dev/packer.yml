@@ -1,0 +1,7 @@
+- hosts: servers
+  become: True
+  tasks:
+    - name: download packer
+      get_url: url="{{packer.url}}/{{packer.file}}" dest="/tmp/{{packer.file}}"
+    - name: unarchive vault
+      unarchive: src="/tmp/{{packer.file}}" dest=/usr/local/bin/ mode=0755 copy=no

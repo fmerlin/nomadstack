@@ -1,0 +1,52 @@
+---
+# Consul is a service discovery
+# https://www.consul.io/
+
+- hosts: all
+  become: True
+  tasks:
+    - name: Check that the consul.key exists
+      stat: path=/etc/consul.key
+      register: stat_result
+    - block:
+      - name: add user consul
+        user: name=consul group=docker
+      - name: create directories
+        file: path=/usr/local/consul state=directory mode=0777 owner=consul group=docker
+      - name: create directories
+        file: path=/var/lib/consul state=directory mode=0777 owner=consul group=docker
+      - name: download consul
+        get_url: url="{{consul.url}}/{{consul.file}}" dest="/tmp/{{consul.file}}"
+      - name: install zip
+        apt: name=zip
+      - name: unarchive consul
+        unarchive: src="/tmp/{{consul.file}}" dest=/usr/local/bin/ mode=0755 copy=no
+      - name: copy systemd unit
+        copy: src="../../resources/etc/systemd/system/consul.service" dest=/etc/systemd/system/ mode=0755 owner=consul group=docker
+      - name: copy consul config
+        template: src="../../templates/etc/consul.json" dest=/etc/consul.json  mode=0750 owner=consul group=docker
+      - name: install pip
+        apt: name=python-pip
+      - name: install psutil
+        pip: name=psutil
+      - name: install python consul
+        pip: name=python-consul
+      - name: copy script
+        copy: src=../../resources/check_node.py dest=/usr/local/consul/check_node.py mode=0755 owner=consul group=docker
+      - name: start consul
+        systemd: name=consul state=started daemon_reload=yes enabled=yes
+      - name: bootstrap acl
+        uri: url="http://localhost:{{consul.port}}/v1/acl/bootstrap" method=PUT return_content=yes body_format=json
+        until: _consul.status == 200
+        retries: 30
+        delay: 5
+        register: _consul
+      - name: save master key
+        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key owner=consul group=docker mode=660
+      - name: Set CONSUL_HTTP_TOKEN
+        lineinfile:
+          dest: /etc/environment
+          state: present
+          regexp: '^CONSUL_HTTP_TOKEN'
+          line: 'CONSUL_HTTP_TOKEN={{_consul.json.SecretID}}'
+      when: not stat_result.stat.exists

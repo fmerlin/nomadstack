@@ -1,0 +1,47 @@
+- hosts: localhost
+  tasks:
+    - name: deploy job
+      nomad:
+        Name: pgbouncer
+        Datacenters: ["dev"]
+        Type: "service"
+        TaskGroups:
+          Name: "pgbouncer"
+          Tasks:
+            - Name: "pgbouncer"
+              Driver: "docker"
+              Config:
+                image: "pgbouncer"
+                network_mode: "host"
+                volumes:
+                  - "local/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini"
+                logging:
+                  type: "fluentd"
+                  config:
+                    fluentd-address: "localhost:24224"
+                    tag: "pgbouncer"
+                    fluentd-async-connect: "true"
+              Resources:
+                CPU: 100
+                MemoryMB: 100
+                Networks:
+                  MBits: 1
+                  DynamicPorts:
+                    Label: "pgbouncer"
+                    Value: 6543
+              Templates:
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pgbouncer.ini.ctmpl') }}"
+                  destination: "local/pgbouncer.ini"
+                  change_mode: "signal"
+                  change_signal: "SIGHUP"
+                - EmbeddedTmpl: ""
+                  destination: "local/users.txt"
+                  change_mode: "signal"
+                  change_signal: "SIGHUP"
+              Service:
+                Name: "pgbouncer"
+                Port: "pgbouncer"
+                Checks:
+                  - Type: "tcp"
+                    Interval: "10s"
+                    Timeout: "2s"

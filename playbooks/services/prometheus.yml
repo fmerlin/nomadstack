@@ -1,0 +1,40 @@
+- hosts: localhost
+  tasks:
+    - name: deploy job
+      nomad:
+        Name: "prometheus"
+        Datacenters:
+         - "dev"
+        Type: "service"
+        TaskGroups:
+          - Name: "prometheus"
+            Tasks:
+            - Name: "prometheus"
+              Driver: "docker"
+              Config:
+                image: "prom/prometheus:latest"
+                network_mode: "host"
+                volumes:
+                  - "local/prometheus.yml:/etc/prometheus/prometheus.yml"
+              Templates:
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/prometheus.yml.ctmpl') }}"
+                  destination: "local/prometheus.yml"
+                  change_mode: "signal"
+                  change_signal: "SIGHUP"
+              Resources:
+                CPU: 100
+                MemoryMB: 100
+                Network:
+                  MBits: 1
+                  DynamicPorts:
+                    Label: "prometheus"
+                    Value: 9090
+              Service:
+                Name: "prometheus"
+                Port: "prometheus"
+                Tags: ["urlprefix-/"]
+                Checks:
+                - Type: "http"
+                  Path: "/-/healthy"
+                  Interval: "10s"
+                  Timeout: "2s"

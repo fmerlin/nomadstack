@@ -1,0 +1,30 @@
+{
+  "listener": [
+    {
+      "tcp": {
+        "address": "0.0.0.0:8200",
+        "tls_disable": 1
+      }
+    }
+  ],
+  "enable_syslog": true,
+  "telemetry": {
+    "prometheus_retention_time": "30s",
+    "disable_hostname": true
+  },
+  "cluster_cipher_suites": "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+  "storage": {
+    "consul": {
+      "address": "127.0.0.1:8500",
+      "path": "vault",
+      "token": "{{ lookup('file','/etc/consul.key') }}"
+    }
+  },
+  "max_lease_ttl": "10h",
+  "default_lease_ttl": "10h",
+  "cluster_name": "testcluster",
+  "ui": true,
+  "raw_storage_endpoint": true,
+  "disable_sealwrap": true,
+  "disable_mlock": true
+}

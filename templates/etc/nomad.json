@@ -1,0 +1,40 @@
+{
+  "datacenter": "{{consul.datacenter}}",
+  "data_dir": "/var/lib/nomad",
+  "bind_addr": "0.0.0.0",
+  "enable_syslog": true,
+  "advertise": {
+    "http": "{{ansible_default_ipv4.address}}",
+    "rpc": "{{ansible_default_ipv4.address}}",
+    "serf": "{{ansible_default_ipv4.address}}:5648"
+  },
+  "ports": {
+    "http": 4646,
+    "rpc": 4647,
+    "serf": 4648
+  },
+  "server": {
+    "enabled": {{ ('servers' in group_names) | to_json }},
+    "bootstrap_expect": {{ groups['servers']|length }}
+  },
+  "client": {
+    "enabled": true,
+    "network_speed": 10,
+    "options": {
+      "driver.raw_exec.enable": "1"
+    }
+  },
+  "consul": {
+    "address": "127.0.0.1:8500",
+    "token": "{{ lookup('file','/etc/consul.key') }}"
+  },
+  "vault": {
+    "enabled": true,
+    "address": "http://127.0.0.1:8200",
+    "token": "{{ lookup('file','/etc/vault.key') }}"
+  },
+  "telemetry": {
+    "publish_allocation_metrics": true,
+    "publish_node_metrics": true,
+    "prometheus_metrics": true
+  }
