@@ -1,12 +1,20 @@
 - hosts: localhost
   tasks:
+    - name: build docker
+      docker_image:
+        build:
+          path: /vagrant/docker/postgres
+        name: nexus.service.consul/paas/uwsgi
+        tag: v1
+        push: yes
+    - name:
     - name: deploy job
       nomad:
         Name: pgbouncer
         Datacenters: ["dev"]
         Type: "service"
         TaskGroups:
-          Name: "pgbouncer"
+        - Name: "pgbouncer"
           Tasks:
             - Name: "pgbouncer"
               Driver: "docker"
@@ -25,23 +33,23 @@
                 CPU: 100
                 MemoryMB: 100
                 Networks:
-                  MBits: 1
+                - MBits: 1
                   DynamicPorts:
-                    Label: "pgbouncer"
+                  - Label: "pgbouncer"
                     Value: 6543
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pgbouncer.ini.ctmpl') }}"
-                  destination: "local/pgbouncer.ini"
-                  change_mode: "signal"
-                  change_signal: "SIGHUP"
+                  DestPath: "local/pgbouncer.ini"
+                  Change_mode: "signal"
+                  Change_signal: "SIGHUP"
                 - EmbeddedTmpl: ""
-                  destination: "local/users.txt"
-                  change_mode: "signal"
-                  change_signal: "SIGHUP"
-              Service:
-                Name: "pgbouncer"
-                Port: "pgbouncer"
-                Checks:
-                  - Type: "tcp"
-                    Interval: "10s"
-                    Timeout: "2s"
+                  DestPath: "local/users.txt"
+                  ChangeMode: "signal"
+                  ChangeSignal: "SIGHUP"
+              Services:
+                - Name: "pgbouncer"
+                  PortLabel: "pgbouncer"
+                  Checks:
+                    - Type: "tcp"
+                      Interval: 10_000_000_000
+                      Timeout: 2_000_000_000

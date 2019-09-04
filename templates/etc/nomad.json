@@ -29,7 +29,7 @@
     "token": "{{ lookup('file','/etc/consul.key') }}"
   },
   "vault": {
-    "enabled": true,
+    "enabled": false,
     "address": "http://127.0.0.1:8200",
     "token": "{{ lookup('file','/etc/vault.key') }}"
   },
@@ -37,4 +37,9 @@
     "publish_allocation_metrics": true,
     "publish_node_metrics": true,
     "prometheus_metrics": true
+  },
+  "acl" : {
+    "enabled": true
   }
+}
+}

@@ -1,27 +1,30 @@
-# Hostname: {{env "HOSTNAME"}}
-{{$hostname := env "HOSTNAME"}}
-{{$key := printf "%s%s" "/service/redis/" $hostname}}
-{{with $redis := key $key | parseJSON}}
-{{if $redis}}
-{{if $redis.daemonize}}
-daemonize {{$redis.daemonize}}
-{{else}}
-daemonize no
-{{end}}
-pidfile /var/run/redis.pid
-{{if $redis.port}}
-port {{$redis.port}}
-{{else}}
+daemonize yes
+pidfile /var/vcap/sys/run/redis.pid
 port 6379
-{{end}}
-tcp-backlog 511
-timeout 0
-tcp-keepalive 0
-databases 16
+requirepass 1a1a2bb0-0ccc-222a-444b-1e1e1e1e2222
+
+# Logging
+logfile ""
+syslog-enabled no
+syslog-ident redis-server
+syslog-facility local0
+
+# Persistance
 dbfilename dump.rdb
-dir ./
+dir /var/vcap/store/redis
+appendonly no
+appendfilename appendonly.aof
 save 900 1
 save 300 10
 save 60 10000
-{{end}}
-{{end}}
+
+# Arbitrary Parameters
+maxmemory-policy allkeys-lru
+slowlog-log-slower-than 10000
+slowlog-max-len 128
+notify-keyspace-events ""
+
+# Plan Properties:
+timeout 3600s
+tcp-keepalive 60
+maxclients 10000

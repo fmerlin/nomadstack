@@ -4,17 +4,17 @@
       docker_image:
         build:
           path: /vagrant/docker/postgres
-        name: nexus.service.consul/paas/uwsgi
+        name: nexus.service.consul/paas/postgres
         tag: v1
         push: yes
     - name:
     - name: deploy job
       nomad:
-        ID: postgres
+        Name: postgres
         Datacenters: ["dev"]
         Type: "service"
         TaskGroups:
-          Name: "postgres"
+        - Name: "postgres"
           Tasks:
             - Name: "postgres"
               Driver: "docker"
@@ -37,28 +37,28 @@
                 CPU: 100
                 MemoryMB: 100
                 Networks:
-                  MBits: 1
+                - MBits: 1
                   DynamicPorts:
-                    Label: "postgres"
+                  - Label: "postgres"
                     Value: 5432
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/postgres.conf.ctmpl') }}"
-                  destination: "local/postgres.conf"
-                  change_mode: "signal"
-                  change_signal: "SIGHUP"
+                  DestPath: "local/postgres.conf"
+                  ChangeMode: "signal"
+                  ChangeSignal: "SIGHUP"
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pg_hba.conf.ctmpl') }}"
-                  destination: "local/pg_hba.conf"
-                  change_mode: "signal"
-                  change_signal: "SIGHUP"
-              Service:
-                Name: "postgres"
-                Port: "postgres"
+                  DestPath: "local/pg_hba.conf"
+                  ChangeMode: "signal"
+                  ChangeSignal: "SIGHUP"
+              Services:
+              - Name: "postgres"
+                PortLabel: "postgres"
                 Checks:
                   - Type: "script"
                     Command: "/usr/bin/pg_isready"
                     Args: ["-h", "localhost", "-U", "postgres"]
-                    Interval: "10s"
-                    Timeout: "2s"
+                    Interval: 10_000_000_000
+                    Timeout: 2_000_000_000
             - Name: "postgres_exporter"
               Driver: "exec"
               Config:

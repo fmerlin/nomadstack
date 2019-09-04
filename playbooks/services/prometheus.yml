@@ -24,17 +24,17 @@
               Resources:
                 CPU: 100
                 MemoryMB: 100
-                Network:
-                  MBits: 1
+                Networks:
+                - MBits: 1
                   DynamicPorts:
-                    Label: "prometheus"
+                  - Label: "prometheus"
                     Value: 9090
-              Service:
-                Name: "prometheus"
-                Port: "prometheus"
+              Services:
+              - Name: "prometheus"
+                PortLabel: "prometheus"
                 Tags: ["urlprefix-/"]
                 Checks:
                 - Type: "http"
                   Path: "/-/healthy"
-                  Interval: "10s"
-                  Timeout: "2s"
+                  Interval: 10_000_000_000
+                  Timeout: 2_000_000_000

@@ -2,40 +2,44 @@
   tasks:
     - name: deploy job
       nomad:
-        Name: "redis"
-        Datacenters:
-         - "dev"
+        Name: redis
+        Datacenters: ["dev"]
         Type: "service"
         TaskGroups:
-          - Name: "redis"
-            Tasks:
+        - Name: "redis"
+          Tasks:
             - Name: "redis"
               Driver: "docker"
               Config:
                 image: "redis"
                 network_mode: "host"
                 volumes:
-                  - "local:/data"
                   - "local/redis.conf:/usr/local/etc/redis/redis.conf"
-              Templates:
-                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/redis.conf.ctmpl') }}"
-                  destination: "local/redis.conf"
-                  change_mode: "signal"
-                  change_signal: "SIGHUP"
+                logging:
+                  type: "fluentd"
+                  config:
+                    fluentd-address: "localhost:24224"
+                    tag: "redis"
+                    fluentd-async-connect: "true"
               Resources:
                 CPU: 100
                 MemoryMB: 100
-                Network:
-                  MBits: 1
+                Networks:
+                - MBits: 1
                   DynamicPorts:
-                    Label: "redis"
-                    Value: 6379
-              Service:
-                Name: "redis"
-                Port: "redis"
-                Checks:
-                - Type: "script"
-                  Command: "redis-cli"
-                  Args: ["ping"]
-                  Interval: "10s"
-                  Timeout: "2s"
+                  - Label: "redis"
+                    Value: 6543
+              Templates:
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/redis.conf.ctmpl') }}"
+                  DestPath: "local/redis.conf"
+                  ChangeMode: "signal"
+                  ChangeSignal: "SIGHUP"
+              Services:
+                - Name: "redis"
+                  PortLabel: "redis"
+                  Checks:
+                    - Type: "script"
+					  Command: "redis-cli"
+					  Args: ["ping""]
+                      Interval: 10_000_000_000
+                      Timeout: 2_000_000_000

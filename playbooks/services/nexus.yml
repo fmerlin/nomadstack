@@ -4,40 +4,40 @@
       nomad:
         Name: "nexus"
         Datacenters:
-         - "dev"
+          - "dev"
         Type: "service"
         TaskGroups:
           - Name: "nexus"
             Tasks:
-            - Name: "nexus"
-              Driver: "docker"
-              Config:
-                image: "sonatype/nexus3"
-                network_mode: "host"
-                volumes:
-                  - "local:/nexus-data"
-                logging:
-                  type: "fluentd"
-                  config:
-                    fluentd-address: "localhost:24224"
-                    tag: "openresty.stderr"
-                    fluentd-async-connect: true
-              Env:
-                NEXUS_CONTEXT: "nexus"
-                INSTALL4J_ADD_VM_PARAMS: "-Xms2g -Xmx2g -XX:MaxDirectMemorySize=3g  -Djava.util.prefs.userRoot=/root"
-              Resources:
-                CPU: 100
-                MemoryMB: 100
-                Networks:
-                  - MBits: 1
-                    DynamicPorts:
-                    - Label: "nexus"
-                      Value: 8081
-              Services:
-                - Name: "nexus"
-                  Port: "nexus"
-                  Checks:
-                  - Type: "http"
-                    Path: "/api/health"
-                    Interval: 10_000_000_000
-                    Timeout: 2_000_000_000
+              - Name: "nexus"
+                Driver: "docker"
+                Config:
+                  image: "sonatype/nexus3"
+                  network_mode: "host"
+                  volumes:
+                    - "local:/nexus-data"
+                  logging:
+                    type: "fluentd"
+                    config:
+                      fluentd-address: "localhost:24224"
+                      tag: "nexus"
+                      fluentd-async-connect: true
+                Env:
+                  NEXUS_CONTEXT: "nexus"
+                  INSTALL4J_ADD_VM_PARAMS: "-Xms2g -Xmx2g -XX:MaxDirectMemorySize=3g  -Djava.util.prefs.userRoot=/root"
+                Resources:
+                  - CPU: 100
+                    MemoryMB: 100
+                    Networks:
+                      - MBits: 1
+                        DynamicPorts:
+                          - Label: "nexus"
+                            Value: 8081
+                Services:
+                  - Name: "nexus"
+                    Port: "nexus"
+                    Checks:
+                      - Type: "http"
+                        Path: "/api/health"
+                        Interval: 10_000_000_000
+                        Timeout: 2_000_000_000

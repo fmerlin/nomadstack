@@ -1,38 +1,38 @@
 - hosts: localhost
   tasks:
-  - name: deploy job
-    nomad:
-      Name: "elasticsearch"
-      Datacenters:
-      - "dev"
-      Type: "service"
-      TaskGroups:
-        - Name: "elasticsearch"
-          Tasks:
+    - name: deploy job
+      nomad:
+        Name: "elasticsearch"
+        Datacenters:
+          - "dev"
+        Type: "service"
+        TaskGroups:
           - Name: "elasticsearch"
-            Driver: "docker"
-            Config:
-              image: "elasticsearch:7.3.1"
-              network_mode: "host"
-              volumes:
-                - "local:/usr/share/elasticsearch/data"
-                - "local/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
-            Env:
-              NEXUS_CONTEXT: "nexus"
-              INSTALL4J_ADD_VM_PARAMS: "-Xms2g -Xmx2g -XX:MaxDirectMemorySize=3g  -Djava.util.prefs.userRoot=/root"
-            Resources:
-              CPU: 100
-              MemoryMB: 100
-              Networks:
-                - MBits: 1
-                  DynamicPorts:
-                  - Label: "elasticsearch"
-                    Value: 9200
-            Services:
+            Tasks:
               - Name: "elasticsearch"
-                PortLabel: "elasticsearch"
-                Checks:
-                - Type: "http"
-                  Path: "/_cluster/health"
-                  Interval: 10_000_000_000
-                  Timeout: 2_000_000_000
+                Driver: "docker"
+                Config:
+                  image: "elasticsearch:7.3.1"
+                  network_mode: "host"
+                  volumes:
+                    - "local:/usr/share/elasticsearch/data"
+                    - "local/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
+                Env:
+                  NEXUS_CONTEXT: "nexus"
+                  INSTALL4J_ADD_VM_PARAMS: "-Xms2g -Xmx2g -XX:MaxDirectMemorySize=3g  -Djava.util.prefs.userRoot=/root"
+                Resources:
+                  CPU: 100
+                  MemoryMB: 100
+                  Networks:
+                    - MBits: 1
+                      DynamicPorts:
+                        - Label: "elasticsearch"
+                          Value: 9200
+                Services:
+                  - Name: "elasticsearch"
+                    PortLabel: "elasticsearch"
+                    Checks:
+                      - Type: "http"
+                        Path: "/_cluster/health"
+                        Interval: 10_000_000_000
+                        Timeout: 2_000_000_000

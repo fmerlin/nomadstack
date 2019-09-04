@@ -18,6 +18,7 @@
       - name: create fake unseal script
         copy: content="" dest=/usr/local/bin/vault_unseal mode=700 owner=vault
       - name: copy vault json
+        become_user: vault
         template: src="../../templates/etc/vault.json" dest=/etc/vault.json mode=0755 owner=vault group=docker
       - name: start vault
         systemd: name=vault state=started daemon_reload=yes enabled=yes
@@ -38,6 +39,7 @@
       - name: create real unseal script
         copy: content="vault operator unseal -address=http://localhost:8200 {{_vault.json.keys_base64[0]}}" dest=/usr/local/bin/vault_unseal mode=0700 owner=vault
       - name: unseal vault
+        become_user: vault
         command: "/usr/local/bin/vault_unseal"
       - name: Set VAULT_TOKEN
         lineinfile:
