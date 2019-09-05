@@ -46,4 +46,10 @@
           state: present
           regexp: '^VAULT_TOKEN'
           line: 'VAULT_TOKEN={{_vault.json.root_token}}'
+      - name: Set VAULT_AGENT_ADDR
+        lineinfile:
+          dest: /etc/environment
+          state: present
+          regexp: '^VAULT_AGENT_ADDR'
+          line: 'VAULT_AGENT_ADDR=http://localhost:8200'
       when: not stat_result.stat.exists

@@ -29,7 +29,7 @@
                   INSTALL4J_ADD_VM_PARAMS: "-Xms2g -Xmx2g -XX:MaxDirectMemorySize=3g  -Djava.util.prefs.userRoot=/root"
                 Resources:
                   - CPU: 100
-                    MemoryMB: 100
+                    MemoryMB: 1024
                     Networks:
                       - MBits: 1
                         DynamicPorts:

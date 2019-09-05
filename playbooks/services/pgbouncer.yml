@@ -33,7 +33,7 @@
                     fluentd-async-connect: "true"
               Resources:
                 CPU: 100
-                MemoryMB: 100
+                MemoryMB: 200
                 Networks:
                 - MBits: 1
                   DynamicPorts:
