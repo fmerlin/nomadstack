@@ -21,6 +21,7 @@
               Config:
                 image: "pgbouncer"
                 network_mode: "host"
+                dns_servers: ['localhost:8600']
                 volumes:
                   - "local/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini"
                 logging:

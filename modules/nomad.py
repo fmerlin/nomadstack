@@ -83,7 +83,12 @@ def main():
                         port_map=dict(type='list'),
                         network_mode=dict(type='str'),
                         volumes=dict(type='list', elements='str'),
+                        dns_servers=dict(type='list', elements='str'),
                         command=dict(type='str'),
+                        work_dir=dict(type='str'),
+                        volume_driver=dict(type='str'),
+                        devices=dict(type='list', elements='dict'),
+                        mounts=dict(type='list', elements='dict'),
                         args=dict(type='list', elements='str'),
                         logging=dict(type='dict', options=dict(
                             type=dict(type='str'),

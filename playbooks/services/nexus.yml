@@ -14,6 +14,7 @@
                 Config:
                   image: "sonatype/nexus3"
                   network_mode: "host"
+                  dns_servers: ['localhost:8600']
                   volumes:
                     - "local:/nexus-data"
                   logging:

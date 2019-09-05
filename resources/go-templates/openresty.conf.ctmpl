@@ -47,10 +47,13 @@ http {
 {{end}}
     server {
         server_name {{ $server_name }};
+    {{ if ne (env "NOMAD_HOST_PORT_http") "" }}
         listen {{ env "NOMAD_HOST_PORT_http" }};
-        #listen {{ env "NOMAD_HOST_PORT_https" }} ssl;
-        #ssl_certificate {{ $server_name }}.crt;
-        #ssl_certificate_key {{ $server_name }}.key;
+    {{ else }}
+        listen {{ env "NOMAD_HOST_PORT_https" }} ssl;
+        ssl_certificate {{ $server_name }}.crt;
+        ssl_certificate_key {{ $server_name }}.key;
+    {{ end }}
     {{ range $key, $pairs := tree (print $openresty "/endpoints/") | byKey -}}
     {{- $type := (keyOrDefault  (print $openresty "/endpoints/" $key "/type") "") -}}
         location /{{ $key }} {

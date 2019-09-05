@@ -13,6 +13,7 @@
               Config:
                 image: "redis"
                 network_mode: "host"
+                dns_servers: ['localhost:8600']
                 volumes:
                   - "local/redis.conf:/usr/local/etc/redis/redis.conf"
                 logging:

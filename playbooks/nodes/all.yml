@@ -1,5 +1,4 @@
 - include: docker.yml
-- include: fluentbit.yml
 - include: consul.yml
 - include: vault.yml
 - include: nomad.yml

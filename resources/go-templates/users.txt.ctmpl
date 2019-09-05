@@ -1,0 +1,3 @@
+{{ range secrets "auth/userpass/users" }}
+"{{.Key}}" "{{.Data.password}}"
+{{ end }}

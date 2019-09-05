@@ -39,17 +39,17 @@
 
 [INPUT]
     Name tail
-    Path /var/log/syslog
+    Path /var/log/syslog.host
     Parser syslog-rfc3164
 
 [INPUT]
     Name forward
 
     # The Listen interface, by default we listen on all of them
-    Listen 0.0.0.0
+    Listen 127.0.0.1
 
     # Default TCP listener port
-    Port 24224
+    Port {{ env NOMAD_PORT_fluentbit }}
 
     # Buffer (Kilobytes)
     # ------------------
@@ -64,31 +64,12 @@
     Port     5140
     Mode     tcp
 
-[INPUT]
-    Name     systemd
-    Systemd_Filter   _SYSTEM_UNIT=nomad.service
-    Tag     nomad
-
-[INPUT]
-    Name     systemd
-    Systemd_Filter   _SYSTEM_UNIT=consul.service
-    Tag     consul
-
-[INPUT]
-    Name     systemd
-    Systemd_Filter   _SYSTEM_UNIT=vault.service
-    Tag     vault
-
-[FILTER]
-    Name parser
-    Math openresty
-    Parser nginx_stderr
-    Key_Name log
-
 [OUTPUT]
     Name  es
     Match *
-    Host  elasticsearch.service.consul
-    Port  9200
+    {{ range service elasticsearch }}
+    Host  {{ .Address }}
+    Port  {{ .Port }}
+    {{ end }}
     Logstash_Format on
     Type  generic

@@ -1,0 +1,33 @@
+- hosts: localhost
+  tasks:
+  - nomad:
+      Name: "fluentbit"
+      Datacenters:
+        - "dev"
+      Type: "system"
+      TaskGroups:
+      - Name: "fluentbit"
+        Tasks:
+          - Name: "fluentbit"
+            Driver: "docker"
+            Config:
+              image: "fluent/fluent-bit:1.0"
+              network_mode: "host"
+              dns_servers: ['localhost:8600']
+              volumes:
+                - "local/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf"
+                - "local:/fluent-bit/log"
+                - "/var/log/syslog:/var/log/syslog.host:ro"
+            Templates:
+              - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/fluent-bit.conf.ctmpl') }}"
+                DestPath: "local/fluent-bit.conf"
+                ChangeMode: "signal"
+                ChangeSignal: "SIGHUP"
+            Resources:
+              CPU: 100
+              MemoryMB: 100
+              Networks:
+                - MBits: 1
+                  DynamicPorts:
+                    - Label: "fluentbit"
+                      Value: 24224

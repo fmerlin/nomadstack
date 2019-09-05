@@ -48,6 +48,7 @@
                 Config:
                   image: "nexus.service.consul/paas/uwsgi:v1"
                   network_mode: "host"
+                  dns_servers: ['localhost:8600']
                   volumes:
                     - "local/uwsgi.ini:/app/uwsgi.ini"
                   logging:

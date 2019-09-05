@@ -5,7 +5,7 @@
 - hosts: all
   become: True
   tasks:
-    - name: Check that the consul.key exists
+    - name: Check that the vault.key exists
       stat: path=/etc/consul.key
       register: stat_result
     - block:
@@ -22,9 +22,9 @@
       - name: unarchive consul
         unarchive: src="/tmp/{{consul.file}}" dest=/usr/local/bin/ mode=0755 copy=no
       - name: copy systemd unit
-        copy: src="../../resources/etc/systemd/system/consul.service" dest=/etc/systemd/system/ mode=0755 owner=consul group=docker
+        template: src="../../resources/etc/systemd/system/consul.service" dest=/etc/systemd/system/  mode=0755 owner=consul group=docker
       - name: copy consul config
-        template: src="../../templates/etc/consul.json" dest=/etc/consul.json  mode=0750 owner=consul group=docker
+        template: src="../../templates/etc/consul.json" dest=/etc/consul.json  mode=0755 owner=consul group=docker
       - name: install pip
         apt: name=python-pip
       - name: install psutil
@@ -32,21 +32,33 @@
       - name: install python consul
         pip: name=python-consul
       - name: copy script
-        copy: src=../../resources/check_node.py dest=/usr/local/consul/check_node.py mode=0755 owner=consul group=docker
+        copy: src=../../resources/check_node.py dest=/usr/local/consul/check_node.py mode=0755
       - name: start consul
         systemd: name=consul state=started daemon_reload=yes enabled=yes
       - name: bootstrap acl
-        uri: url="http://localhost:{{consul.port}}/v1/acl/bootstrap" method=PUT return_content=yes body_format=json
+        uri: url="http://localhost:{{consul.port}}/v1/acl/bootstrap" method=PUT status=200 return_content=yes body_format=json
+        register: _consul
         until: _consul.status == 200
         retries: 30
         delay: 5
-        register: _consul
       - name: save master key
-        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key owner=consul group=docker mode=660
+        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key owner=consul mode=0660
       - name: Set CONSUL_HTTP_TOKEN
         lineinfile:
           dest: /etc/environment
           state: present
           regexp: '^CONSUL_HTTP_TOKEN'
           line: 'CONSUL_HTTP_TOKEN={{_consul.json.SecretID}}'
+      - name: Set CONSUL_HTTP_TOKEN
+        consul_acl:
+          mgmt_token: "{{_consul.json.SecretID}}"
+          rules:
+            - key: ""
+              policy: read
+            - key: "vault"
+              policy: deny
+            - node: ""
+              policy: read
+            - service: ""
+              policy: read
       when: not stat_result.stat.exists

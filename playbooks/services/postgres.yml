@@ -7,7 +7,6 @@
         name: nexus.service.consul/paas/postgres
         tag: v1
         push: yes
-    - name:
     - name: deploy job
       nomad:
         Name: postgres
@@ -21,6 +20,7 @@
               Config:
                 image: "nexus.service.consul/paas/postgres:v1"
                 network_mode: "host"
+                dns_servers: ['localhost:8600']
                 volumes:
                   - "local:/var/lib/postgresql/data"
                 logging:
@@ -53,6 +53,7 @@
               Services:
               - Name: "postgres"
                 PortLabel: "postgres"
+                Tags: ["postgres"]
                 Checks:
                   - Type: "script"
                     Command: "/usr/bin/pg_isready"
