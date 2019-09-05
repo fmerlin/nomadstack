@@ -1,6 +1,7 @@
 - hosts: localhost
   tasks:
-  - nomad:
+    - nomad:
+        ID: "elasticsearch"
         Name: "elasticsearch"
         Datacenters:
           - "dev"
@@ -18,26 +19,25 @@
                     - "local:/usr/share/elasticsearch/data"
                     - "local/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
                 Env:
-                  NEXUS_CONTEXT: "nexus"
-                  INSTALL4J_ADD_VM_PARAMS: "-Xms2g -Xmx2g -XX:MaxDirectMemorySize=3g  -Djava.util.prefs.userRoot=/root"
+                  discovery.type: single-node
                 Resources:
                   CPU: 100
-                  MemoryMB: 100
+                  MemoryMB: 2048
                   Networks:
                     - MBits: 1
                       DynamicPorts:
                         - Label: "elasticsearch"
                           Value: 9200
-            Templates:
-              - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/elasticsearch.yml.ctmpl') }}"
-                DestPath: "local/elasticsearch.yml"
-                ChangeMode: "signal"
-                ChangeSignal: "SIGHUP"
-            Services:
-              - Name: "elasticsearch"
-                PortLabel: "elasticsearch"
-                Checks:
-                  - Type: "http"
-                    Path: "/_cluster/health"
-                    Interval: 10_000_000_000
-                    Timeout: 2_000_000_000
+                Templates:
+                  - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/elasticsearch.yml.ctmpl') }}"
+                    DestPath: "local/elasticsearch.yml"
+                    ChangeMode: "signal"
+                    ChangeSignal: "SIGHUP"
+                Services:
+                  - Name: "elasticsearch"
+                    PortLabel: "elasticsearch"
+                    Checks:
+                      - Type: "http"
+                        Path: "/_cluster/health"
+                        Interval: 10_000_000_000
+                        Timeout: 2_000_000_000

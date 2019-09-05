@@ -2,6 +2,7 @@
   tasks:
     - name: deploy job
       nomad:
+        ID: "nexus"
         Name: "nexus"
         Datacenters:
           - "dev"

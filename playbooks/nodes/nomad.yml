@@ -35,4 +35,16 @@
           state: present
           regexp: '^NOMAD_TOKEN'
           line: 'NOMAD_TOKEN={{_nomad.json.SecretID}}'
+      - name: set nomad policies
+        nomad_acl:
+          Name: anonymous
+          Description: "Allow read-only access for anonymous requests"
+          Rules:
+            namespace:
+              default:
+                policy: read
+            agent:
+              policy: read
+            node:
+              policy: read
       when: not stat_result.stat.exists

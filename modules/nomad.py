@@ -1,6 +1,23 @@
+import json
+
 import nomad
-import os
 from ansible.module_utils.basic import AnsibleModule
+
+
+def strip(d):
+    if type(d) == dict:
+        res = dict()
+        for k, v in d.iteritems():
+            if v is not None:
+                res[k] = strip(v)
+        return res
+    if type(d) == list:
+        res = list()
+        for v in d:
+            if v is not None:
+                res.append(strip(v))
+        return res
+    return d
 
 
 def main():
@@ -170,16 +187,21 @@ def main():
         supports_check_mode=True
     )
 
+    name = module.params.get('ID')
+    data = dict(Job=strip(module.params))
+
     with open('/etc/nomad.key') as f:
         token = f.read()
         n = nomad.Nomad(token=token)
 
     if module.check_mode:
-        n.validate.validate_job(module.params)
-        module.exit_json(changed=False)
-
-    res = n.job.register_job(module.params)
-    module.exit_json(changed=True, **res)
+        with open('/vagrant/input.json', 'w') as f:
+            json.dump(data, f)
+        res = n.validate.validate_job(data).json()
+        module.exit_json(changed=False, **res)
+    else:
+        res = n.job.register_job(name, data)
+        module.exit_json(changed=True, **res)
 
 
 if __name__ == '__main__':

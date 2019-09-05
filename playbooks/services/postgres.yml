@@ -9,6 +9,7 @@
         push: yes
     - name: deploy job
       nomad:
+        ID: postgres
         Name: postgres
         Datacenters: ["dev"]
         Type: "service"

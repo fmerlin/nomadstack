@@ -1,6 +1,7 @@
 - hosts: localhost
   tasks:
   - nomad:
+      ID: "fluentbit"
       Name: "fluentbit"
       Datacenters:
         - "dev"
@@ -11,7 +12,7 @@
           - Name: "fluentbit"
             Driver: "docker"
             Config:
-              image: "fluent/fluent-bit:1.0"
+              image: "fluent/fluent-bit:1.2.2"
               network_mode: "host"
               dns_servers: ['localhost:8600']
               volumes:
@@ -24,10 +25,13 @@
                 ChangeMode: "signal"
                 ChangeSignal: "SIGHUP"
             Resources:
-              CPU: 100
-              MemoryMB: 100
+              CPU: 200
+              MemoryMB: 500
               Networks:
                 - MBits: 1
                   DynamicPorts:
-                    - Label: "fluentbit"
+                    - Label: "forward"
                       Value: 24224
+            Services:
+              - Name: "fluentbit"
+                PortLabel: "forward"

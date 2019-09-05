@@ -2,6 +2,7 @@
   tasks:
     - name: deploy job
       nomad:
+        ID: redis
         Name: redis
         Datacenters: ["dev"]
         Type: "service"

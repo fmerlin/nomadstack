@@ -10,6 +10,7 @@
     - name:
     - name: deploy job
       nomad:
+        ID: pgbouncer
         Name: pgbouncer
         Datacenters: ["dev"]
         Type: "service"

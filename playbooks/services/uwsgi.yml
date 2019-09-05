@@ -37,6 +37,7 @@
           port: 80
     - name: deploy job
       nomad:
+        ID: uwsgi
         Name: uwsgi
         Datacenters: ["dev"]
         Type: "service"

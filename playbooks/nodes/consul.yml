@@ -31,6 +31,8 @@
         pip: name=psutil
       - name: install python consul
         pip: name=python-consul
+      - name: install python hcl
+        pip: name=pyhcl
       - name: copy script
         copy: src=../../resources/check_node.py dest=/usr/local/consul/check_node.py mode=0755
       - name: start consul
@@ -42,14 +44,14 @@
         retries: 30
         delay: 5
       - name: save master key
-        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key owner=consul mode=0660
+        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key owner=consul mode=0660 group=docker
       - name: Set CONSUL_HTTP_TOKEN
         lineinfile:
           dest: /etc/environment
           state: present
           regexp: '^CONSUL_HTTP_TOKEN'
           line: 'CONSUL_HTTP_TOKEN={{_consul.json.SecretID}}'
-      - name: Set CONSUL_HTTP_TOKEN
+      - name: Set consul policies
         consul_acl:
           mgmt_token: "{{_consul.json.SecretID}}"
           rules:
