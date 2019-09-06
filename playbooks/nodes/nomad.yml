@@ -28,7 +28,7 @@
         delay: 5
         register: _nomad
       - name: save root token
-        copy: content="{{_nomad.json.SecretID}}" dest=/etc/nomad.key owner=nomad group=docker mode=0660
+        copy: content="{{_nomad.json.SecretID}}" dest=/etc/nomad.key group=docker mode=0660
       - name: Set NOMAD_TOKEN
         lineinfile:
           dest: /etc/environment

@@ -42,7 +42,7 @@
         retries: 30
         delay: 5
       - name: save master key
-        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key owner=consul mode=0660 group=docker
+        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key mode=0660 group=docker
       - name: Set CONSUL_HTTP_TOKEN
         lineinfile:
           dest: /etc/environment

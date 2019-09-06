@@ -11,22 +11,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/disco64"
   config.disksize.size = "50GB"
   config.vm.provider :virtualbox do |v|
-    v.memory = 6144
-    v.cpus = 4
+    v.gui = true
+    v.memory = 4096
+    v.cpus = 8
     v.linked_clone = true
   end
-  config.vm.define "server1" do |foobar|
-    foobar.vm.hostname = "server1"
-    foobar.vm.network 'private_network', ip: '192.168.56.10'
-    foobar.vm.provision :shell, inline: "echo 'azerty' > /tmp/vault_pass"
-    foobar.vm.provision "ansible_local" do |ansible|
-      ansible.inventory_path = "/vagrant/inventory/local"
-      ansible.limit = "all"
-      ansible.become = true
-      ansible.playbook = "/vagrant/playbooks/nodes/all.yml"
-      ansible.config_file = "/vagrant/ansible.cfg"
-      ansible.verbose = true
-      ansible.install = true
-    end
+  config.vm.boot_timeout = 600
+  config.vm.hostname = "server1"
+  config.vm.network 'private_network', ip: '192.168.56.10'
+  config.vm.provision :shell, inline: "echo 'azerty' > /tmp/vault_pass"
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.inventory_path = "/vagrant/inventory/local"
+    ansible.limit = "all"
+    ansible.become = true
+    ansible.playbook = "/vagrant/playbooks/nodes/all.yml"
+    ansible.config_file = "/vagrant/ansible.cfg"
+    ansible.verbose = true
+    ansible.install = true
   end
 end
