@@ -25,8 +25,6 @@
         template: src="../../resources/etc/systemd/system/consul.service" dest=/etc/systemd/system/  mode=0755 owner=consul group=docker
       - name: copy consul config
         template: src="../../templates/etc/consul.json" dest=/etc/consul.json  mode=0755 owner=consul group=docker
-      - name: install pip
-        apt: name=python-pip
       - name: install psutil
         pip: name=psutil
       - name: install python consul

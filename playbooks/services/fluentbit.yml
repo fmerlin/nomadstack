@@ -1,6 +1,6 @@
 - hosts: localhost
   tasks:
-  - nomad:
+  - nomad_job:
       ID: "fluentbit"
       Name: "fluentbit"
       Datacenters:
@@ -12,9 +12,9 @@
           - Name: "fluentbit"
             Driver: "docker"
             Config:
-              image: "fluent/fluent-bit:1.2.2"
+              image: "{{fluentbit.image}}"
               network_mode: "host"
-              dns_servers: ['localhost:8600']
+              dns_servers: ['localhost:{{consul.dns}}']
               volumes:
                 - "local/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf"
                 - "local:/fluent-bit/log"
@@ -29,9 +29,9 @@
               MemoryMB: 100
               Networks:
                 - MBits: 1
-                  DynamicPorts:
+                  ReservedPorts:
                     - Label: "forward"
-                      Value: 24224
+                      Value: {{ fluentbit.port }}
             Services:
               - Name: "fluentbit"
                 PortLabel: "forward"

@@ -1,2 +1,4 @@
 cluster.name: "docker-cluster"
 network.host: 0.0.0.0
+http.port: {{ env NOMAD_PORT_http }}
+transport.port: {{ env NOMAD_PORT_transport }}

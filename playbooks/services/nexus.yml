@@ -1,7 +1,7 @@
 - hosts: localhost
   tasks:
     - name: deploy job
-      nomad:
+      nomad_job:
         ID: "nexus"
         Name: "nexus"
         Datacenters:
@@ -13,31 +13,31 @@
               - Name: "nexus"
                 Driver: "docker"
                 Config:
-                  image: "sonatype/nexus3"
+                  image: "{{nexus.image}}"
                   network_mode: "host"
-                  dns_servers: ['localhost:8600']
+                  dns_servers: ['localhost:{{consul.dns}}']
                   volumes:
                     - "local:/nexus-data"
                   logging:
                     type: "fluentd"
                     config:
-                      fluentd-address: "localhost:24224"
-                      tag: "nexus"
-                      fluentd-async-connect: true
+                    - fluentd-address: "localhost:{{fluentbit.port}}"
+                    - fluentd-async-connect: "true"
+                    - tag: "nexus"
                 Env:
                   NEXUS_CONTEXT: "nexus"
-                  INSTALL4J_ADD_VM_PARAMS: "-Xms2g -Xmx2g -XX:MaxDirectMemorySize=3g  -Djava.util.prefs.userRoot=/root"
+                  INSTALL4J_ADD_VM_PARAMS: "-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1g  -Djava.util.prefs.userRoot=/root"
                 Resources:
-                  - CPU: 100
-                    MemoryMB: 1024
-                    Networks:
-                      - MBits: 1
-                        DynamicPorts:
-                          - Label: "nexus"
-                            Value: 8081
+                  CPU: 100
+                  MemoryMB: 1024
+                  Networks:
+                    - MBits: 1
+                      ReservedPorts:
+                        - Label: "http"
+                          Value: 8081
                 Services:
                   - Name: "nexus"
-                    Port: "nexus"
+                    PortLabel: "http"
                     Checks:
                       - Type: "http"
                         Path: "/api/health"

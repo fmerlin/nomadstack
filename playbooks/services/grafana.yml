@@ -1,7 +1,7 @@
 - hosts: localhost
   tasks:
     - name: deploy job
-      nomad:
+      nomad_job:
         ID: "grafana"
         Name: "grafana"
         Datacenters:
@@ -13,22 +13,22 @@
             - Name: "grafana"
               Driver: "docker"
               Config:
-                image: "grafana/grafana"
+                image: "{{grafana.image}}"
                 network_mode: "host"
-                dns_servers: ['localhost:8600']
+                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local:/var/lib/grafana"
               Resources:
                 CPU: 100
-                MemoryMB: 500
+                MemoryMB: 300
                 Networks:
                 - MBits: 1
-                  DynamicPorts:
-                  - Label: "grafana"
-                    Value: 3000
+                  ReservedPorts:
+                  - Label: "http"
+                    Value: {{ grafana.port }}
               Services:
               - Name: "grafana"
-                PortLabel: "grafana"
+                PortLabel: "http"
                 Checks:
                 - Type: "http"
                   Path: "/api/health"

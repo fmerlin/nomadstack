@@ -1,8 +1,9 @@
-daemonize yes
+daemonize no
 pidfile /var/vcap/sys/run/redis.pid
-port 6379
-requirepass 1a1a2bb0-0ccc-222a-444b-1e1e1e1e2222
-
+port {{ env NOMAD_PORT_redis }}
+{{ with secret "secret/redis" }}
+requirepass {{ .Data.data.password }}
+{{ end }}
 # Logging
 logfile ""
 syslog-enabled no
@@ -11,7 +12,7 @@ syslog-facility local0
 
 # Persistance
 dbfilename dump.rdb
-dir /var/vcap/store/redis
+dir /local
 appendonly no
 appendfilename appendonly.aof
 save 900 1
@@ -19,6 +20,7 @@ save 300 10
 save 60 10000
 
 # Arbitrary Parameters
+maxmemory {{ key "redis/maxmemory" }}
 maxmemory-policy allkeys-lru
 slowlog-log-slower-than 10000
 slowlog-max-len 128

@@ -9,7 +9,7 @@ consul:
   - CPU:100,95
   - DISK:/,100m,90
 
-nomad:
+nomad_job:
   url: https://releases.hashicorp.com/nomad/0.9.5
   file: nomad_0.9.5_linux_amd64.zip
   port: 4646

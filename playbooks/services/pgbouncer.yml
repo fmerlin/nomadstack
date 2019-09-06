@@ -9,7 +9,7 @@
         push: yes
     - name:
     - name: deploy job
-      nomad:
+      nomad_job:
         ID: pgbouncer
         Name: pgbouncer
         Datacenters: ["dev"]
@@ -22,23 +22,23 @@
               Config:
                 image: "pgbouncer"
                 network_mode: "host"
-                dns_servers: ['localhost:8600']
+                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini"
                 logging:
                   type: "fluentd"
                   config:
-                    fluentd-address: "localhost:24224"
-                    tag: "pgbouncer"
-                    fluentd-async-connect: "true"
+                  - fluentd-address: "localhost:{{fluentbit.port}}"
+                  - tag: "pgbouncer"
+                  - fluentd-async-connect: "true"
               Resources:
                 CPU: 100
                 MemoryMB: 200
                 Networks:
                 - MBits: 1
-                  DynamicPorts:
+                  ReservedPorts:
                   - Label: "pgbouncer"
-                    Value: 6543
+                    Value: {{ pgbouncer.port }}
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pgbouncer.ini.ctmpl') }}"
                   DestPath: "local/pgbouncer.ini"

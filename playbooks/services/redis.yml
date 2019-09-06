@@ -1,7 +1,15 @@
 - hosts: localhost
   tasks:
+    - name: set public settings
+      consul_kv_tree:
+        maxmemory: "400mb"
+    - name: set private settings
+      vault_secret:
+        path: "redis"
+        secret:
+          password: 'totoleheros'
     - name: deploy job
-      nomad:
+      nomad_job:
         ID: redis
         Name: redis
         Datacenters: ["dev"]
@@ -14,23 +22,23 @@
               Config:
                 image: "redis"
                 network_mode: "host"
-                dns_servers: ['localhost:8600']
+                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local/redis.conf:/usr/local/etc/redis/redis.conf"
                 logging:
                   type: "fluentd"
                   config:
-                    fluentd-address: "localhost:24224"
-                    tag: "redis"
-                    fluentd-async-connect: "true"
+                  - fluentd-address: "localhost:{{fluentbit.port}}"
+                  - tag: "redis"
+                  - fluentd-async-connect: "true"
               Resources:
                 CPU: 100
-                MemoryMB: 100
+                MemoryMB: 500
                 Networks:
                 - MBits: 1
-                  DynamicPorts:
+                  ReservedPorts:
                   - Label: "redis"
-                    Value: 6543
+                    Value: {{redis.port}}
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/redis.conf.ctmpl') }}"
                   DestPath: "local/redis.conf"

@@ -2,6 +2,7 @@ consul:
   url: https://releases.hashicorp.com/consul/1.6.0
   file: consul_1.6.0_linux_amd64.zip
   port: 8500
+  dns: 8600
   datacenter: dev
   servers: "localhost"
   checks:
@@ -9,19 +10,14 @@ consul:
   - CPU:100,95
   - DISK:/,100m,90
 
-nomad:
+nomad_job:
   url: https://releases.hashicorp.com/nomad/0.9.5
   file: nomad_0.9.5_linux_amd64.zip
   port: 4646
 
-fluentd:
-  elasticsearch: localhost
+fluentbit:
+  image: fluent/fluent-bit:1.2.2
   port: 24224
-
-node_exporter:
-  url: https://github.com/prometheus/node_exporter/releases/download/v0.15.0
-  file: node_exporter-0.15.0.linux-amd64
-  port: 9100
 
 vault:
   url: https://releases.hashicorp.com/vault/1.2.2
@@ -29,8 +25,35 @@ vault:
   port: 8200
 
 elasticsearch:
-  host: localhost
-  port: 9200
+  image: 'elasticsearch:7.3.1'
+  http_port: 9200
+  transport_port: 9300
+
+grafana:
+  image: grafana/grafana
+  port: 3000
+
+nexus:
+  image: sonatype/nexus3
+  port: 8081
+
+prometheus:
+  image: prom/prometheus:latest
+  port: 9090
+
+openresty:
+  image: nexus.service.consul/paas/openresty
+  tag: v1
+
+
+postgres:
+  image: nexus.service.consul/paas/postgres
+  tag: v1
+  port: 5432
+
+postgres_exporter:
+  url: https://github.com/wrouesnel/postgres_exporter/releases/download/v0.5.1/postgres_exporter_v0.5.1_linux-amd64.tar.gz
+  file: postgres_exporter_v0.5.1_linux-amd64/postgres_exporter
 
 packer:
   url: https://releases.hashicorp.com/packer/1.4.2
@@ -39,3 +62,11 @@ packer:
 terraform:
   url: https://releases.hashicorp.com/terraform/0.12.5
   file: terraform_0.12.5_linux_amd64.zip
+
+uwsgi:
+  image: nexus.service.consul/paas/uwsgi
+  tag: v1
+
+redis:
+  image: redis
+  port: 6379

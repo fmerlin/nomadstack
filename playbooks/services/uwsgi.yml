@@ -4,8 +4,8 @@
       docker_image:
         build:
           path: /vagrant/docker/uwsgi
-        name: nexus.service.consul/paas/uwsgi
-        tag: v1
+        name: "{{uwsgi.image}}"
+        tag: "{{uwsgi.tag}}"
         push: yes
     - name: init consul
       consul_kv_tree:
@@ -36,7 +36,7 @@
               prod: 10.1.0.1,10.1.0.2
           port: 80
     - name: deploy job
-      nomad:
+      nomad_job:
         ID: uwsgi
         Name: uwsgi
         Datacenters: ["dev"]
@@ -47,17 +47,17 @@
               - Name: "uwsgi"
                 Driver: "docker"
                 Config:
-                  image: "nexus.service.consul/paas/uwsgi:v1"
+                  image: "{{uwsgi.image}}:{{uwsgi.tag}}"
                   network_mode: "host"
-                  dns_servers: ['localhost:8600']
+                  dns_servers: ['localhost:{{consul.dns}}']
                   volumes:
                     - "local/uwsgi.ini:/app/uwsgi.ini"
                   logging:
                     type: "fluentd"
                     config:
-                      fluentd-address: "localhost:24224"
-                      tag: "uwsgi.stderr"
-                      fluentd-async-connect: "true"
+                    - fluentd-address: "localhost:{{fluentbit.port}}"
+                    - tag: "uwsgi"
+                    - fluentd-async-connect: "true"
                 Resources:
                   CPU: 100
                   MemoryMB: 1024

@@ -1,5 +1,5 @@
 consul:
   options: "-join={{groups['servers']|join(' -join=') }}"
 
-nomad:
+nomad_job:
   server: "false"

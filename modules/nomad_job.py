@@ -1,5 +1,4 @@
 import json
-
 import nomad
 from ansible.module_utils.basic import AnsibleModule
 
@@ -109,7 +108,7 @@ def main():
                         args=dict(type='list', elements='str'),
                         logging=dict(type='dict', options=dict(
                             type=dict(type='str'),
-                            config=dict(type='dict', options={
+                            config=dict(type='list', elements='dict', options={
                                 "fluentd-address": dict(type='str'),
                                 "fluentd-async-connect": dict(type='bool'),
                                 "tag": dict(type='str')
@@ -166,9 +165,12 @@ def main():
                             CIDR=dict(type='str'),
                             IP=dict(type='str'),
                             MBits=dict(type='int'),
-                            DynamicPorts=dict(type='list', elements='dict', options=dict(
+                            ReservedPorts=dict(type='list', elements='dict', options=dict(
                                 Label=dict(type='str'),
                                 Value=dict(type='int')
+                            )),
+                            DynamicPorts=dict(type='list', elements='dict', options=dict(
+                                Label=dict(type='str')
                             )),
                         )),
                     )),

@@ -12,3 +12,9 @@
         append: yes
     - name: reset connection to allow user changes to affect 'current login user'
       meta: reset_connection
+    - name: install pip
+      apt: name=python-pip
+    - name: install ssl-match
+      apt: python-backports.ssl-match-hostname
+    - name: install docker
+      pip: docker

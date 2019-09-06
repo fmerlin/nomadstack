@@ -11,8 +11,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/disco64"
   config.disksize.size = "50GB"
   config.vm.provider :virtualbox do |v|
-    v.memory = 4096
-    v.cpus = 2
+    v.memory = 6144
+    v.cpus = 4
     v.linked_clone = true
   end
   config.vm.define "server1" do |foobar|

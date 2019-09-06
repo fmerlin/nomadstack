@@ -1,7 +1,7 @@
 - hosts: localhost
   tasks:
     - name: deploy job
-      nomad:
+      nomad_job:
         ID: "prometheus"
         Name: "prometheus"
         Datacenters:
@@ -13,9 +13,9 @@
             - Name: "prometheus"
               Driver: "docker"
               Config:
-                image: "prom/prometheus:latest"
+                image: "{{prometheus.image}}"
                 network_mode: "host"
-                dns_servers: ['localhost:8600']
+                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local/prometheus.yml:/etc/prometheus/prometheus.yml"
               Templates:
@@ -28,9 +28,9 @@
                 MemoryMB: 100
                 Networks:
                 - MBits: 1
-                  DynamicPorts:
+                  ReservedPorts:
                     Label: "prometheus"
-                    Value: 9090
+                    Value: {{ prometheus.port }}
               Services:
               - Name: "prometheus"
                 PortLabel: "prometheus"

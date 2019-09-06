@@ -1,6 +1,6 @@
 - hosts: localhost
   tasks:
-    - nomad:
+    - nomad_job:
         ID: "elasticsearch"
         Name: "elasticsearch"
         Datacenters:
@@ -12,9 +12,9 @@
               - Name: "elasticsearch"
                 Driver: "docker"
                 Config:
-                  image: "elasticsearch:7.3.1"
+                  image: "{{elasticsearch.image}}"
                   network_mode: "host"
-                  dns_servers: ['localhost:8600']
+                  dns_servers: ['localhost:{{consul.dns}}']
                   volumes:
                     - "local:/usr/share/elasticsearch/data"
                     - "local/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
@@ -25,9 +25,11 @@
                   MemoryMB: 2048
                   Networks:
                     - MBits: 1
-                      DynamicPorts:
-                        - Label: "elasticsearch"
-                          Value: 9200
+                      ReservedPorts:
+                        - Label: "http"
+                          Value: {{ elasticsearch.http_port }}
+                        - Label: "transport"
+                          Value: {{ elasticsearch.transport_port }}
                 Templates:
                   - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/elasticsearch.yml.ctmpl') }}"
                     DestPath: "local/elasticsearch.yml"
@@ -35,7 +37,7 @@
                     ChangeSignal: "SIGHUP"
                 Services:
                   - Name: "elasticsearch"
-                    PortLabel: "elasticsearch"
+                    PortLabel: "http"
                     Checks:
                       - Type: "http"
                         Path: "/_cluster/health"

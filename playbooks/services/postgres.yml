@@ -4,11 +4,11 @@
       docker_image:
         build:
           path: /vagrant/docker/postgres
-        name: nexus.service.consul/paas/postgres
-        tag: v1
+        name: "{{postgres.image}}"
+        tag: "{{postgres.tag}}"
         push: yes
     - name: deploy job
-      nomad:
+      nomad_job:
         ID: postgres
         Name: postgres
         Datacenters: ["dev"]
@@ -19,17 +19,17 @@
             - Name: "postgres"
               Driver: "docker"
               Config:
-                image: "nexus.service.consul/paas/postgres:v1"
+                image: "{{postgres.image}}:{{postgres.tag}}"
                 network_mode: "host"
-                dns_servers: ['localhost:8600']
+                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local:/var/lib/postgresql/data"
                 logging:
                   type: "fluentd"
                   config:
-                    fluentd-address: "localhost:24224"
-                    tag: "postgres"
-                    fluentd-async-connect: "true"
+                  - fluentd-address: "localhost:{{fluentbit.port}}"
+                  - tag: "postgres"
+                  - fluentd-async-connect: "true"
               Env:
                 POSTGRES_USER: "postgres"
                 POSTGRES_PASSWORD: "{{ postgres_password }}"
@@ -39,9 +39,9 @@
                 MemoryMB: 100
                 Networks:
                 - MBits: 1
-                  DynamicPorts:
+                  ReservedPorts:
                   - Label: "postgres"
-                    Value: 5432
+                    Value: {{postgres.port}}
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/postgres.conf.ctmpl') }}"
                   DestPath: "local/postgres.conf"
@@ -64,6 +64,6 @@
             - Name: "postgres_exporter"
               Driver: "exec"
               Config:
-                command: "local/postgres_exporter_v0.5.1_linux-amd64/postgres_exporter"
+                command: "local/{{postgres_exporter.file}}"
               Artifacts:
-                - Source: "https://github.com/wrouesnel/postgres_exporter/releases/download/v0.5.1/postgres_exporter_v0.5.1_linux-amd64.tar.gz"
+                - Source: "{{postgres_exporter.url}}"
