@@ -53,4 +53,6 @@
           state: present
           regexp: '^VAULT_AGENT_ADDR'
           line: 'VAULT_AGENT_ADDR=http://localhost:8200'
+      - name: install python vault
+        pip: name=hvac
       when: not stat_result.stat.exists

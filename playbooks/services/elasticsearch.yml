@@ -14,7 +14,6 @@
                 Config:
                   image: "{{elasticsearch.image}}"
                   network_mode: "host"
-                  dns_servers: ['localhost:{{consul.dns}}']
                   volumes:
                     - "local:/usr/share/elasticsearch/data"
                     - "local/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
@@ -27,9 +26,9 @@
                     - MBits: 1
                       ReservedPorts:
                         - Label: "http"
-                          Value: {{ elasticsearch.http_port }}
+                          Value: "{{ elasticsearch.http_port }}"
                         - Label: "transport"
-                          Value: {{ elasticsearch.transport_port }}
+                          Value: "{{ elasticsearch.transport_port }}"
                 Templates:
                   - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/elasticsearch.yml.ctmpl') }}"
                     DestPath: "local/elasticsearch.yml"

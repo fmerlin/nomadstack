@@ -49,7 +49,6 @@
                 Config:
                   image: "{{uwsgi.image}}:{{uwsgi.tag}}"
                   network_mode: "host"
-                  dns_servers: ['localhost:{{consul.dns}}']
                   volumes:
                     - "local/uwsgi.ini:/app/uwsgi.ini"
                   logging:

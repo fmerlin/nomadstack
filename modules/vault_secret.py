@@ -10,7 +10,7 @@ def main():
         )
     )
 
-    with open('/etc/nomad.key') as f:
+    with open('/etc/vault.key') as f:
         token = f.read()
         client = hvac.Client(token=token)
 

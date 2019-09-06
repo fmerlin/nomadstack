@@ -21,7 +21,6 @@
               Config:
                 image: "{{postgres.image}}:{{postgres.tag}}"
                 network_mode: "host"
-                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local:/var/lib/postgresql/data"
                 logging:
@@ -41,7 +40,7 @@
                 - MBits: 1
                   ReservedPorts:
                   - Label: "postgres"
-                    Value: {{postgres.port}}
+                    Value: "{{postgres.port}}"
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/postgres.conf.ctmpl') }}"
                   DestPath: "local/postgres.conf"

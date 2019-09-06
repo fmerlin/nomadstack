@@ -1,0 +1,4 @@
+{
+  "dns": ["127.0.0.1", "8.8.8.8", "208.67.222.222"],
+  "insecure-registries" : ["nexus.service.consul:5000"]
+}

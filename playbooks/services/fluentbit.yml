@@ -14,7 +14,6 @@
             Config:
               image: "{{fluentbit.image}}"
               network_mode: "host"
-              dns_servers: ['localhost:{{consul.dns}}']
               volumes:
                 - "local/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf"
                 - "local:/fluent-bit/log"
@@ -31,7 +30,7 @@
                 - MBits: 1
                   ReservedPorts:
                     - Label: "forward"
-                      Value: {{ fluentbit.port }}
+                      Value: "{{ fluentbit.port }}"
             Services:
               - Name: "fluentbit"
                 PortLabel: "forward"

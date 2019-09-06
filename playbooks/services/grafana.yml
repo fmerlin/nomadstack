@@ -15,7 +15,6 @@
               Config:
                 image: "{{grafana.image}}"
                 network_mode: "host"
-                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local:/var/lib/grafana"
               Resources:
@@ -25,7 +24,7 @@
                 - MBits: 1
                   ReservedPorts:
                   - Label: "http"
-                    Value: {{ grafana.port }}
+                    Value: "{{ grafana.port }}"
               Services:
               - Name: "grafana"
                 PortLabel: "http"

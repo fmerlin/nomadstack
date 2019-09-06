@@ -31,6 +31,18 @@
       "enabled": true,
       "default_policy": "deny",
       "enable_token_persistence": true
+  },
+  "ports": {
+        "http": 8500,
+        "dns": 53
+  },
+  "dns_config": {
+    "allow_stale": true,
+    "max_stale": "87600h"
+  },
+  "addresses": {
+    "dns": "127.0.0.1",
+    "http": "0.0.0.0"
   }
 }
 

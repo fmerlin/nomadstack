@@ -1,6 +1,6 @@
 daemonize no
 pidfile /var/vcap/sys/run/redis.pid
-port {{ env NOMAD_PORT_redis }}
+port {{ env "NOMAD_PORT_redis" }}
 {{ with secret "secret/redis" }}
 requirepass {{ .Data.data.password }}
 {{ end }}

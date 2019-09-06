@@ -15,7 +15,6 @@
                 Config:
                   image: "{{nexus.image}}"
                   network_mode: "host"
-                  dns_servers: ['localhost:{{consul.dns}}']
                   volumes:
                     - "local:/nexus-data"
                   logging:
@@ -34,7 +33,7 @@
                     - MBits: 1
                       ReservedPorts:
                         - Label: "http"
-                          Value: 8081
+                          Value: "{{nexus.port}}"
                 Services:
                   - Name: "nexus"
                     PortLabel: "http"

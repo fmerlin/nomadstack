@@ -2,7 +2,9 @@
   tasks:
     - name: set public settings
       consul_kv_tree:
-        maxmemory: "400mb"
+        path: "redis"
+        data:
+          maxmemory: "400mb"
     - name: set private settings
       vault_secret:
         path: "redis"
@@ -15,41 +17,40 @@
         Datacenters: ["dev"]
         Type: "service"
         TaskGroups:
-        - Name: "redis"
-          Tasks:
-            - Name: "redis"
-              Driver: "docker"
-              Config:
-                image: "redis"
-                network_mode: "host"
-                dns_servers: ['localhost:{{consul.dns}}']
-                volumes:
-                  - "local/redis.conf:/usr/local/etc/redis/redis.conf"
-                logging:
-                  type: "fluentd"
-                  config:
-                  - fluentd-address: "localhost:{{fluentbit.port}}"
-                  - tag: "redis"
-                  - fluentd-async-connect: "true"
-              Resources:
-                CPU: 100
-                MemoryMB: 500
-                Networks:
-                - MBits: 1
-                  ReservedPorts:
-                  - Label: "redis"
-                    Value: {{redis.port}}
-              Templates:
-                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/redis.conf.ctmpl') }}"
-                  DestPath: "local/redis.conf"
-                  ChangeMode: "signal"
-                  ChangeSignal: "SIGHUP"
-              Services:
-                - Name: "redis"
-                  PortLabel: "redis"
-                  Checks:
-                    - Type: "script"
-					  Command: "redis-cli"
-					  Args: ["ping""]
-                      Interval: 10_000_000_000
-                      Timeout: 2_000_000_000
+          - Name: "redis"
+            Tasks:
+              - Name: "redis"
+                Driver: "docker"
+                Config:
+                  image: "redis"
+                  network_mode: "host"
+                  volumes:
+                    - "local/redis.conf:/usr/local/etc/redis/redis.conf"
+                  logging:
+                    type: "fluentd"
+                    config:
+                      - fluentd-address: "localhost:{{fluentbit.port}}"
+                      - tag: "redis"
+                      - fluentd-async-connect: "true"
+                Resources:
+                  CPU: 100
+                  MemoryMB: 500
+                  Networks:
+                    - MBits: 1
+                      ReservedPorts:
+                        - Label: "redis"
+                          Value: "{{redis.port}}"
+                Templates:
+                  - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/redis.conf.ctmpl') }}"
+                    DestPath: "local/redis.conf"
+                    ChangeMode: "signal"
+                    ChangeSignal: "SIGHUP"
+                Services:
+                  - Name: "redis"
+                    PortLabel: "redis"
+                    Checks:
+                      - Type: "script"
+                        Command: "redis-cli"
+                        Args: ["ping"]
+                        Interval: 10_000_000_000
+                        Timeout: 2_000_000_000

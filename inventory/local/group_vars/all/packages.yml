@@ -45,7 +45,6 @@ openresty:
   image: nexus.service.consul/paas/openresty
   tag: v1
 
-
 postgres:
   image: nexus.service.consul/paas/postgres
   tag: v1

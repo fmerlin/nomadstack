@@ -22,7 +22,6 @@
               Config:
                 image: "pgbouncer"
                 network_mode: "host"
-                dns_servers: ['localhost:{{consul.dns}}']
                 volumes:
                   - "local/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini"
                 logging:
@@ -38,7 +37,7 @@
                 - MBits: 1
                   ReservedPorts:
                   - Label: "pgbouncer"
-                    Value: {{ pgbouncer.port }}
+                    Value: "{{ pgbouncer.port }}"
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pgbouncer.ini.ctmpl') }}"
                   DestPath: "local/pgbouncer.ini"

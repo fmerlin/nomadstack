@@ -43,8 +43,14 @@
             namespace:
               default:
                 policy: read
+                capabilities: ["read-job"]
             agent:
               policy: read
             node:
               policy: read
+            quota:
+              policy: read
+        register: _nomad_anonymous
+      - name: save anonymous token
+        copy: content="{{_nomad_anonymous.json.SecretID}}" dest=/etc/nomad_anonymous.key group=docker mode=0666
       when: not stat_result.stat.exists

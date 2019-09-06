@@ -21,6 +21,7 @@
     "enabled": true,
     "network_speed": 10,
     "options": {
+      "docker.cleanup.container": false
       "driver.raw_exec.enable": "1"
     }
   },
