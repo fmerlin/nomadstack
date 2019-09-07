@@ -1,20 +1,18 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-=begin
   if Vagrant.has_plugin?("vagrant-proxyconf")
-    config.proxy.http     = "http://192.168.0.2:3128/"
-    config.proxy.https    = "http://192.168.0.2:3128/"
-    config.proxy.no_proxy = "localhost,127.0.0.1"
+    config.proxy.http     = "http://10.0.2.0:3128/"
+    config.proxy.https    = "http://10.0.2.0:3128/"
+    config.proxy.no_proxy = "localhost,127.0.0.1,192.168.56.10"
   end
-=end
   config.vm.box = "ubuntu/disco64"
   config.disksize.size = "50GB"
   config.vm.provider :virtualbox do |v|
-    v.gui = true
+    v.gui = false
     v.memory = 4096
     v.cpus = 8
-    v.linked_clone = true
+    v.customize ["modifyvm", :id, "--nictype1", "virtio"]
   end
   config.vm.boot_timeout = 600
   config.vm.hostname = "server1"
@@ -24,7 +22,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ansible.inventory_path = "/vagrant/inventory/local"
     ansible.limit = "all"
     ansible.become = true
-    ansible.playbook = "/vagrant/playbooks/nodes/all.yml"
+    ansible.playbook = "/vagrant/playbooks/nodes/main.yml"
     ansible.config_file = "/vagrant/ansible.cfg"
     ansible.verbose = true
     ansible.install = true

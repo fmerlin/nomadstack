@@ -43,7 +43,7 @@
                   DestPath: "local/pgbouncer.ini"
                   Change_mode: "signal"
                   Change_signal: "SIGHUP"
-                - EmbeddedTmpl: ""
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/users.txt.ctmpl') }}"
                   DestPath: "local/users.txt"
                   ChangeMode: "signal"
                   ChangeSignal: "SIGHUP"

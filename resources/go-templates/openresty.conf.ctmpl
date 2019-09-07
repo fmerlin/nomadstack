@@ -22,7 +22,7 @@ geo ${{ $v }} {
 }
 {{- end }}
 http {
-    resolver localhost:8600;
+    resolver localhost;
     lua_code_cache off;
     lua_package_path "/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua"; # Include Lua libraries
     lua_shared_dict rp_cache 10M;

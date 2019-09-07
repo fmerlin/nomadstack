@@ -2,7 +2,7 @@
   "listener": [
     {
       "tcp": {
-        "address": "0.0.0.0:8200",
+        "address": "0.0.0.0:{{vault.port}}",
         "tls_disable": 1
       }
     }
@@ -15,9 +15,9 @@
   "cluster_cipher_suites": "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
   "storage": {
     "consul": {
-      "address": "127.0.0.1:8500",
+      "address": "127.0.0.1:{{consul.port}}",
       "path": "vault",
-      "token": "{{ lookup('file','/etc/consul.key') }}"
+      "token": "{{ _consul.json.SecretID }}"
     }
   },
   "max_lease_ttl": "10h",

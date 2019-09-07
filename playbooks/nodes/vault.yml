@@ -19,8 +19,6 @@
         copy: content="" dest=/usr/local/bin/vault_unseal mode=700 owner=vault
       - name: copy vault json
         template: src="../../templates/etc/vault.json" dest=/etc/vault.json mode=0755 owner=vault group=docker
-        become: True
-        become_user: root
       - name: start vault
         systemd: name=vault state=started daemon_reload=yes enabled=yes
       - name: init vault
@@ -36,9 +34,9 @@
         retries: 30
         delay: 5
       - name: save root token
-        copy: content="{{_vault.json.root_token}}" dest=/etc/vault.key mode=0660 group=docker
+        copy: content="{{_vault.json.root_token}}" dest=/etc/vault.key mode=0640 group=docker
       - name: create real unseal script
-        copy: content="sleep 1 && vault operator unseal -address=http://localhost:8200 {{_vault.json.keys_base64[0]}}" dest=/usr/local/bin/vault_unseal mode=0700 owner=vault
+        copy: content="sleep 1 && vault operator unseal -address=http://localhost:{{vault.port}} {{_vault.json.keys_base64[0]}}" dest=/usr/local/bin/vault_unseal mode=0700 owner=vault
       - name: unseal vault
         command: "sudo /usr/local/bin/vault_unseal"
       - name: Set VAULT_TOKEN
@@ -52,7 +50,9 @@
           dest: /etc/environment
           state: present
           regexp: '^VAULT_AGENT_ADDR'
-          line: 'VAULT_AGENT_ADDR=http://localhost:8200'
+          line: 'VAULT_AGENT_ADDR=http://127.0.0.1:{{vault.port}}'
       - name: install python vault
         pip: name=hvac
+      - name: add user pass
+        shell: "vault auth enable userpass"
       when: not stat_result.stat.exists

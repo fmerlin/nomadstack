@@ -5,7 +5,7 @@
 - hosts: all
   become: True
   tasks:
-    - name: Check that the vault.key exists
+    - name: Check that the consul.key exists
       stat: path=/etc/consul.key
       register: stat_result
     - block:
@@ -42,13 +42,19 @@
         retries: 30
         delay: 5
       - name: save master key
-        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key mode=0660 group=docker
+        copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key mode=0640 group=docker
       - name: Set CONSUL_HTTP_TOKEN
         lineinfile:
           dest: /etc/environment
           state: present
           regexp: '^CONSUL_HTTP_TOKEN'
           line: 'CONSUL_HTTP_TOKEN={{_consul.json.SecretID}}'
+      - name: Set CONSUL_HTTP_ADDR
+        lineinfile:
+          dest: /etc/environment
+          state: present
+          regexp: '^CONSUL_HTTP_ADDR'
+          line: 'CONSUL_HTTP_ADDR=127.0.0.1:{{consul.port}}'
       - name: Set consul policies
         consul_acl:
           mgmt_token: "{{_consul.json.SecretID}}"
@@ -63,7 +69,7 @@
               policy: read
         register: _consul_anonymous
       - name: save consul anonymous token
-        copy: content="{{_consul_anonymous.token}}" dest=/etc/consul_anonymous.key mode=0666 group=docker
+        copy: content="{{_consul_anonymous.token}}" dest=/etc/consul_anonymous.key mode=0644 group=docker
       - name: set default token
-        shell: "consul --token={{_consul.json.SecretID}} acl set-agent-token default {{_consul_anonymous.token}}"
+        shell: "consul acl set-agent-token --token={{_consul.json.SecretID}} default {{_consul_anonymous.token}}"
       when: not stat_result.stat.exists

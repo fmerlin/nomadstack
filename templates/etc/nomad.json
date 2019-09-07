@@ -9,7 +9,7 @@
     "serf": "{{ansible_default_ipv4.address}}:5648"
   },
   "ports": {
-    "http": 4646,
+    "http": {{ nomad.port }},
     "rpc": 4647,
     "serf": 4648
   },
@@ -19,20 +19,20 @@
   },
   "client": {
     "enabled": true,
-    "network_speed": 10,
+    "network_speed": 100,
     "options": {
-      "docker.cleanup.container": false
+      "docker.cleanup.container": false,
       "driver.raw_exec.enable": "1"
     }
   },
   "consul": {
-    "address": "127.0.0.1:8500",
-    "token": "{{ lookup('file','/etc/consul.key') }}"
+    "address": "127.0.0.1:{{ consul.port }}",
+    "token": "{{ _consul.json.SecretID }}"
   },
   "vault": {
     "enabled": false,
-    "address": "http://127.0.0.1:8200",
-    "token": "{{ lookup('file','/etc/vault.key') }}"
+    "address": "http://127.0.0.1:{{ vault.port }}",
+    "token": "{{ _vault.json.root_token }}"
   },
   "telemetry": {
     "publish_allocation_metrics": true,

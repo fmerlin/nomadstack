@@ -19,7 +19,6 @@
     - name: reset connection to allow user changes to affect 'current login user'
       meta: reset_connection
     - name: copy docker conf
-      copy: src=../../resources/etc/docker/daemon.json dest=/etc/docker/ owner=docker group=docker mode=0660
+      copy: src=../../resources/etc/docker/daemon.json dest=/etc/docker/ owner="{{ ansible_user }}" group=docker mode=0660
     - name: restart docker
       service: name=docker state=restarted
-
