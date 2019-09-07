@@ -4,7 +4,7 @@
       ID: "fluentbit"
       Name: "fluentbit"
       Datacenters:
-        - "dev"
+        - "{{consul.datacenter}}"
       Type: "system"
       TaskGroups:
       - Name: "fluentbit"
@@ -21,8 +21,7 @@
             Templates:
               - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/fluent-bit.conf.ctmpl') }}"
                 DestPath: "local/fluent-bit.conf"
-                ChangeMode: "signal"
-                ChangeSignal: "SIGHUP"
+                ChangeMode: "restart"
             Resources:
               CPU: 200
               MemoryMB: 100

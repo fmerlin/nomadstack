@@ -23,9 +23,9 @@ def strip(d):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            Name=dict(type='str'),
+            Name=dict(required=True, type='str'),
             Description=dict(type='str'),
-            Rules=dict(type='dict', options=dict(
+            Rules=dict(required=True, type='dict', options=dict(
                 namespace=dict(type='dict'),
                 agent=dict(type='dict', options=dict(
                     policy=dict(type='str')
@@ -40,17 +40,21 @@ def main():
         )
     )
     data = strip(module.params)
-    print(json.dumps(data))
 
     with open('/etc/nomad.key') as f:
         token = f.read()
         n = nomad.Nomad(token=token)
 
     if module.check_mode:
+        print(json.dumps(data))
         module.exit_json(changed=False)
     else:
-        res = n.acl.create_policy(data.get('Name'), data)
-        module.exit_json(changed=True, **res)
+        n.acl.create_policy(data.get('Name'), dict(
+            Name=data.get('Name'),
+            Description=data.get('Description', ''),
+            Rules=json.dumps(data.get('Rules'))
+        ))
+        module.exit_json(changed=True)
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@
       nomad_job:
         ID: postgres
         Name: postgres
-        Datacenters: ["dev"]
+        Datacenters: ["{{consul.datacenter}}"]
         Type: "service"
         TaskGroups:
         - Name: "postgres"

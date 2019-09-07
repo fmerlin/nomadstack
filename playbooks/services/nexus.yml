@@ -5,7 +5,7 @@
         ID: "nexus"
         Name: "nexus"
         Datacenters:
-          - "dev"
+          - "{{consul.datacenter}}"
         Type: "service"
         TaskGroups:
           - Name: "nexus"

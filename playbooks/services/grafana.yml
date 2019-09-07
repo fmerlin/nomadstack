@@ -5,7 +5,7 @@
         ID: "grafana"
         Name: "grafana"
         Datacenters:
-         - "dev"
+         - "{{consul.datacenter}}"
         Type: "service"
         TaskGroups:
           - Name: "grafana"

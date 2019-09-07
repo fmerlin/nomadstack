@@ -67,7 +67,7 @@
 [OUTPUT]
     Name  es
     Match *
-    {{ range service "elasticsearch" }}
+    {{ range service "elasticsearch|passing,warning" }}
     Host  {{ .Address }}
     Port  {{ .Port }}
     {{ end }}

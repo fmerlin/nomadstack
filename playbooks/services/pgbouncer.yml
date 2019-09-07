@@ -12,7 +12,7 @@
       nomad_job:
         ID: pgbouncer
         Name: pgbouncer
-        Datacenters: ["dev"]
+        Datacenters: ["{{consul.datacenter}}"]
         Type: "service"
         TaskGroups:
         - Name: "pgbouncer"

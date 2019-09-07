@@ -5,7 +5,7 @@
         ID: "prometheus"
         Name: "prometheus"
         Datacenters:
-         - "dev"
+         - "{{consul.datacenter}}"
         Type: "service"
         TaskGroups:
           - Name: "prometheus"

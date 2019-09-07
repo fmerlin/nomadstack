@@ -17,7 +17,7 @@
       nomad_job:
         ID: openresty
         Name: openresty
-        Datacenters: ["dev"]
+        Datacenters: ["{{consul.datacenter}}"]
         Type: "system"
         TaskGroups:
           Name: "openresty"

@@ -2,23 +2,26 @@
   tasks:
     - name: deploy job
       nomad_job:
-        ID: "confluence"
-        Name: "confluence"
+        ID: "jira"
+        Name: "jira"
         Datacenters:
          - "{{consul.datacenter}}"
         Type: "service"
         TaskGroups:
-          - Name: "confluence"
+          - Name: "jira"
             Tasks:
-            - Name: "confluence"
+            - Name: "jira"
               Driver: "docker"
               Config:
-                image: "{{confluence.image}}"
+                image: "{{jira.image}}"
                 network_mode: "host"
                 volumes:
-                  - "local:/var/atlassian/application-data/confluence"
+                  - "local:/var/atlassian/application-data/jira"
               Env:
-                CATALINA_CONTEXT_PATH: confluence
+                JVM_MINIMUM_MEMORY: 1024m
+                JVM_MAXIMUM_MEMORY: 1024m
+                ATL_TOMCAT_PORT: "{{ jira.port }}"
+                CATALINA_CONTEXT_PATH: jira
               Resources:
                 CPU: 100
                 MemoryMB: 1024
@@ -26,12 +29,12 @@
                 - MBits: 1
                   ReservedPorts:
                   - Label: "http"
-                    Value: "{{ confluence.port }}"
+                    Value: "{{ jira.port }}"
               Services:
-              - Name: "confluence"
+              - Name: "jira"
                 PortLabel: "http"
                 Checks:
                 - Type: "http"
-                  Path: "/confluence/status"
+                  Path: "/jira/status"
                   Interval: 10_000_000_000
                   Timeout: 2_000_000_000

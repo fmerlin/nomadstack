@@ -39,7 +39,7 @@
       nomad_job:
         ID: uwsgi
         Name: uwsgi
-        Datacenters: ["dev"]
+        Datacenters: ["{{consul.datacenter}}"]
         Type: "service"
         TaskGroups:
           - Name: "uwsgi"

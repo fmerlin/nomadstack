@@ -14,7 +14,7 @@
       nomad_job:
         ID: redis
         Name: redis
-        Datacenters: ["dev"]
+        Datacenters: ["{{consul.datacenter}}"]
         Type: "service"
         TaskGroups:
           - Name: "redis"

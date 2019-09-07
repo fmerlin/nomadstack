@@ -4,7 +4,7 @@
         ID: "elasticsearch"
         Name: "elasticsearch"
         Datacenters:
-          - "dev"
+          - "{{consul.datacenter}}"
         Type: "service"
         TaskGroups:
           - Name: "elasticsearch"

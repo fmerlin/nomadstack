@@ -69,3 +69,15 @@ uwsgi:
 redis:
   image: redis
   port: 6379
+
+rundeck:
+  image: rundeck/rundeck:3.1.0
+  port: 4440
+
+confluence:
+  image: atlasssian/confluence-server
+  port: 8090
+
+jira:
+  image: atlasssian/jira-software
+  port: 8080
