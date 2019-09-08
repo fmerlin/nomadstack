@@ -9,6 +9,10 @@
         Type: "service"
         TaskGroups:
           - Name: "grafana"
+            EphemeralDisk:
+              SizeMB: 300
+              Sticky: true
+              Migrate: true
             Tasks:
             - Name: "grafana"
               Driver: "docker"

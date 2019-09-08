@@ -1,5 +1,7 @@
 - hosts: localhost
   tasks:
+    - name: create docker-volume
+      docker_volume: name=nexus-data
     - name: deploy job
       nomad_job:
         ID: "nexus"
@@ -15,20 +17,21 @@
                 Config:
                   image: "{{nexus.image}}"
                   network_mode: "host"
+                  volume_driver: 'local'
                   volumes:
-                    - "local:/nexus-data"
+                    - "nexus-data:/nexus-data"
                   logging:
                     type: "fluentd"
                     config:
                     - fluentd-address: "localhost:{{fluentbit.port}}"
                     - fluentd-async-connect: "true"
-                    - tag: "nexus"
+                    - tag: "docker.nexus"
                 Env:
                   NEXUS_CONTEXT: "nexus"
-                  INSTALL4J_ADD_VM_PARAMS: "-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1g  -Djava.util.prefs.userRoot=/root"
+                  INSTALL4J_ADD_VM_PARAMS: "-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1g  -Djava.util.prefs.userRoot=/nexus-data/javaprefs"
                 Resources:
-                  CPU: 100
-                  MemoryMB: 1024
+                  CPU: 1000
+                  MemoryMB: 2048
                   Networks:
                     - MBits: 1
                       ReservedPorts:
@@ -39,6 +42,6 @@
                     PortLabel: "http"
                     Checks:
                       - Type: "http"
-                        Path: "/api/health"
+                        Path: "/nexus/service/rest/v1/status"
                         Interval: 10_000_000_000
                         Timeout: 2_000_000_000

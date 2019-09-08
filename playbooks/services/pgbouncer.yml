@@ -28,7 +28,7 @@
                   type: "fluentd"
                   config:
                   - fluentd-address: "localhost:{{fluentbit.port}}"
-                  - tag: "pgbouncer"
+                  - tag: "docker.pgbouncer"
                   - fluentd-async-connect: "true"
               Resources:
                 CPU: 100

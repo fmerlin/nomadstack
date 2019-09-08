@@ -7,6 +7,9 @@
         name: "{{postgres.image}}"
         tag: "{{postgres.tag}}"
         push: yes
+    - name: create volume pg_data
+      docker_volume:
+        name: pg_data
     - name: deploy job
       nomad_job:
         ID: postgres
@@ -21,21 +24,30 @@
               Config:
                 image: "{{postgres.image}}:{{postgres.tag}}"
                 network_mode: "host"
-                volumes:
-                  - "local:/var/lib/postgresql/data"
+                mounts:
+                  - type: bind
+                    target: /var/lib/postgresql/data/postgres.conf
+                    source: local/postgres.conf
+                  - type: bind
+                    target: /var/lib/postgresql/data/pg_hba.conf
+                    source: local/pg_hba.conf
+                  - type: volume
+                    target: /var/lib/postgresql/data/pgdata
+                    source: pg_data
                 logging:
                   type: "fluentd"
                   config:
                   - fluentd-address: "localhost:{{fluentbit.port}}"
-                  - tag: "postgres"
+                  - tag: "docker.postgres"
                   - fluentd-async-connect: "true"
               Env:
                 POSTGRES_USER: "postgres"
-                POSTGRES_PASSWORD: "{{ postgres_password }}"
+                POSTGRES_PASSWORD: "{{ postgres.password }}"
                 POSTGRES_DB: "postgres"
+                PGDATA: /var/lib/postgresql/data/pgdata
               Resources:
-                CPU: 100
-                MemoryMB: 100
+                CPU: 500
+                MemoryMB: 1024
                 Networks:
                 - MBits: 1
                   ReservedPorts:
@@ -65,4 +77,4 @@
               Config:
                 command: "local/{{postgres_exporter.file}}"
               Artifacts:
-                - Source: "{{postgres_exporter.url}}"
+                - GetterSource: "{{postgres_exporter.url}}"

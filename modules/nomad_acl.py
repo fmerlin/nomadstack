@@ -1,5 +1,5 @@
 import json
-
+import os
 import nomad
 from ansible.module_utils.basic import AnsibleModule
 
@@ -23,6 +23,8 @@ def strip(d):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            token=dict(type='str'),
+            token_file=dict(type='str'),
             Name=dict(required=True, type='str'),
             Description=dict(type='str'),
             Rules=dict(required=True, type='dict', options=dict(
@@ -39,20 +41,23 @@ def main():
             ))
         )
     )
-    data = strip(module.params)
 
-    with open('/etc/nomad.key') as f:
-        token = f.read()
-        n = nomad.Nomad(token=token)
+    token = module.params.get('token')
+    token_file = module.params.get('token_file')
+    if token_file:
+        with open(token_file) as f:
+            token = f.read()
+    if token is None:
+        token = os.getenv('NOMAD_TOKEN')
+    n = nomad.Nomad(token=token)
 
     if module.check_mode:
-        print(json.dumps(data))
         module.exit_json(changed=False)
     else:
-        n.acl.create_policy(data.get('Name'), dict(
-            Name=data.get('Name'),
-            Description=data.get('Description', ''),
-            Rules=json.dumps(data.get('Rules'))
+        n.acl.create_policy(module.params.get('Name'), dict(
+            Name=module.params.get('Name'),
+            Description=module.params.get('Description', ''),
+            Rules=json.dumps(strip(module.params.get('Rules')))
         ))
         module.exit_json(changed=True)
 

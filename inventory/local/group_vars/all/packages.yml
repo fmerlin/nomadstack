@@ -2,7 +2,7 @@ consul:
   url: https://releases.hashicorp.com/consul/1.6.0
   file: consul_1.6.0_linux_amd64.zip
   port: 8500
-  dns: 8600
+  dns: 53
   datacenter: dev
   servers: "localhost"
   checks:
@@ -34,7 +34,7 @@ grafana:
   port: 3000
 
 nexus:
-  image: sonatype/nexus3
+  image: sonatype/nexus3:3.18.1
   port: 8081
 
 prometheus:
@@ -42,13 +42,14 @@ prometheus:
   port: 9090
 
 openresty:
-  image: nexus.service.consul/paas/openresty
+  image: nexus.service.consul:5000/paas/openresty
   tag: v1
 
 postgres:
-  image: nexus.service.consul/paas/postgres
+  image: nexus.service.consul:5000/paas/postgres
   tag: v1
   port: 5432
+  password: azerty
 
 postgres_exporter:
   url: https://github.com/wrouesnel/postgres_exporter/releases/download/v0.5.1/postgres_exporter_v0.5.1_linux-amd64.tar.gz
@@ -63,7 +64,7 @@ terraform:
   file: terraform_0.12.5_linux_amd64.zip
 
 uwsgi:
-  image: nexus.service.consul/paas/uwsgi
+  image: nexus.service.consul:5000/paas/uwsgi
   tag: v1
 
 redis:

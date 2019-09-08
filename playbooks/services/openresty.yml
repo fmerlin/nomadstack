@@ -34,7 +34,7 @@
                   type: "fluentd"
                   config:
                   - fluentd-address: "localhost:{{fluentbit.port}}"
-                  - tag: "openresty"
+                  - tag: "docker.openresty"
                   - fluentd-async-connect: "true"
               Env:
                 OAUTH: "{'client_id': '', 'client_secret': '', 'scope': ''300'', 'response_type': 'token', 'signin_url': '', 'details_url': ''}"

@@ -43,6 +43,7 @@
           line: 'NOMAD_ADDR=http://127.0.0.1:{{ nomad.port }}'
       - name: set nomad policies
         nomad_acl:
+          token: "{{_nomad.json.SecretID}}"
           Name: anonymous
           Description: "Allow read-only access for anonymous requests"
           Rules:

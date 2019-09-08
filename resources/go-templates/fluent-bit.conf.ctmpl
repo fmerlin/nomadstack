@@ -41,6 +41,7 @@
     Name tail
     Path /var/log/syslog.host
     Parser syslog-rfc3164
+    Tag system.syslog
 
 [INPUT]
     Name forward
@@ -63,13 +64,19 @@
     Listen   127.0.0.1
     Port     5140
     Mode     tcp
+    Tag      system.rsyslog
 
+{{ range service "elasticsearch|passing,warning" }}
 [OUTPUT]
     Name  es
     Match *
-    {{ range service "elasticsearch|passing,warning" }}
     Host  {{ .Address }}
     Port  {{ .Port }}
-    {{ end }}
     Logstash_Format on
     Type  generic
+{{ end }}
+
+[OUTPUT]
+    Name  file
+    Match docker.*
+    Path /log/fluentbit.log

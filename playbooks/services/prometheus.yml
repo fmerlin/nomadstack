@@ -1,5 +1,8 @@
 - hosts: localhost
   tasks:
+    - name: create volume
+      docker_volume:
+        name: prometheus-data
     - name: deploy job
       nomad_job:
         ID: "prometheus"
@@ -15,8 +18,10 @@
               Config:
                 image: "{{prometheus.image}}"
                 network_mode: "host"
+                volume_driver: local
                 volumes:
-                  - "local/prometheus.yml:/etc/prometheus/prometheus.yml"
+                  - "./local/prometheus.yml:/etc/prometheus/prometheus.yml"
+                  - "prometheus-data:/prometheus-data"
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/prometheus.yml.ctmpl') }}"
                   DestPath: "local/prometheus.yml"
@@ -24,7 +29,7 @@
                   ChangeSignal: "SIGHUP"
               Resources:
                 CPU: 100
-                MemoryMB: 100
+                MemoryMB: 500
                 Networks:
                 - MBits: 1
                   ReservedPorts:

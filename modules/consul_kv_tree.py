@@ -28,6 +28,8 @@ def kv_put(c, path, data, check_mode):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            token=dict(type='str'),
+            token_file=dict(type='str'),
             path=dict(required=True, type='str'),
             data=dict(required=True, type='dict'),
             host=dict(default='localhost', type='str'),
@@ -36,14 +38,20 @@ def main():
         supports_check_mode=True
     )
 
+    token = module.params.get('token')
+    token_file = module.params.get('token_file')
     path = module.params.get('path')
     data = module.params.get('data')
     host = module.params.get('host')
     port = module.params.get('port')
 
-    c = consul.Consul(host=host, port=port, token=os.getenv('HTTP_VAULT_TOKEN'))
+    if token_file:
+        with open(token_file) as f:
+            token = f.read()
+    if token is None:
+        token = os.getenv('CONSUL_HTTP_TOKEN')
+    c = consul.Consul(host=host, port=port, token=token)
     changed = kv_put(c, path, data, module.check_mode)
-
     module.exit_json(changed=changed)
 
 

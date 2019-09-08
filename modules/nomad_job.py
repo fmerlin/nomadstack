@@ -1,4 +1,5 @@
 import json
+import os
 import nomad
 from ansible.module_utils.basic import AnsibleModule
 
@@ -19,9 +20,19 @@ def strip(d):
     return d
 
 
+def filter(d, fields):
+    res = dict()
+    for k, v in d.iteritems():
+        if v is not None and k not in fields:
+            res[k] = strip(v)
+    return res
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            token=dict(type='str'),
+            token_file=dict(type='str'),
             Affinities=dict(type='list', elements='dict', options=dict(
                 LTarget=dict(type='str'),
                 RTarget=dict(type='str'),
@@ -104,7 +115,22 @@ def main():
                         work_dir=dict(type='str'),
                         volume_driver=dict(type='str'),
                         devices=dict(type='list', elements='dict'),
-                        mounts=dict(type='list', elements='dict'),
+                        mounts=dict(type='list', elements='dict', options=dict(
+                            type=dict(type='str'),
+                            target=dict(type='str'),
+                            source=dict(type='str'),
+                            readonly=dict(type='bool'),
+                            bind_options=dict(type='dict', options=dict(
+                                propagation=dict(type='str')
+                            )),
+                            volume_options=dict(type='dict', options=dict(
+                                name=dict(type='str'),
+                                options=dict(type='dict')
+                            )),
+                            tmpfs_options=dict(type='dict', options=dict(
+                                size=dict(type='int')
+                            ))
+                        )),
                         args=dict(type='list', elements='str'),
                         logging=dict(type='dict', options=dict(
                             type=dict(type='str'),
@@ -190,15 +216,18 @@ def main():
     )
 
     name = module.params.get('ID')
-    data = dict(Job=strip(module.params))
+    token = module.params.get('token')
+    token_file = module.params.get('token_file')
+    data = dict(Job=filter(module.params, ['token', 'token_file']))
 
-    with open('/etc/nomad.key') as f:
-        token = f.read()
-        n = nomad.Nomad(token=token)
+    if token_file:
+        with open(token_file) as f:
+            token = f.read()
+    if token is None:
+        token = os.getenv('NOMAD_TOKEN')
+    n = nomad.Nomad(token=token)
 
     if module.check_mode:
-        with open('/vagrant/input.json', 'w') as f:
-            json.dump(data, f)
         res = n.validate.validate_job(data).json()
         module.exit_json(changed=False, **res)
     else:

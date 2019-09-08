@@ -16,7 +16,7 @@
               network_mode: "host"
               volumes:
                 - "local/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf"
-                - "local:/fluent-bit/log"
+                - "/var/log/fluentbit:/log/"
                 - "/var/log/syslog:/var/log/syslog.host:ro"
             Templates:
               - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/fluent-bit.conf.ctmpl') }}"

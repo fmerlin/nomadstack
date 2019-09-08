@@ -55,7 +55,7 @@
                     type: "fluentd"
                     config:
                     - fluentd-address: "localhost:{{fluentbit.port}}"
-                    - tag: "uwsgi"
+                    - tag: "docker.uwsgi"
                     - fluentd-async-connect: "true"
                 Resources:
                   CPU: 100

@@ -72,4 +72,8 @@
         copy: content="{{_consul_anonymous.token}}" dest=/etc/consul_anonymous.key mode=0644 group=docker
       - name: set default token
         shell: "consul acl set-agent-token --token={{_consul.json.SecretID}} default {{_consul_anonymous.token}}"
+      - name: copy resolved.conf
+        copy: src=../../resources/etc/systemd/resolved.conf dest=/etc/systemd/resolved.conf mode=0644
+      - name: restarting resolved
+        service: name=system-resolved state=restarted daemon_reload=yes
       when: not stat_result.stat.exists

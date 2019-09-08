@@ -30,7 +30,7 @@
                     type: "fluentd"
                     config:
                       - fluentd-address: "localhost:{{fluentbit.port}}"
-                      - tag: "redis"
+                      - tag: "docker.redis"
                       - fluentd-async-connect: "true"
                 Resources:
                   CPU: 100
