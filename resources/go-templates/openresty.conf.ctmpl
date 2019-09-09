@@ -12,25 +12,26 @@ env RIAK;
 env CONSUL;
 env FLUENTD;
 env NOMAD;
-{{- range $v, $p1 := tree (print $openresty "/geo/") | byKey -}}
+http {
+{{ range $v, $p1 := tree (print $openresty "/geo/") | byKey -}}
 geo ${{ $v }} {
 {{- range $k, $p2 := tree (print $openresty "/geo/" $v "/") | explode -}}
 {{- range $ip := (print $p2 | split ",") }}
-    {{ $ip }}: {{ $k }};
+    {{ $ip }} {{ $k }};
 {{- end -}}
 {{- end }}
 }
 {{- end }}
-http {
     resolver localhost;
-    lua_code_cache off;
+#    lua_code_cache off;
     lua_package_path "/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua"; # Include Lua libraries
     lua_shared_dict rp_cache 10M;
     init_worker_by_lua_file '/usr/local/openresty/lualib/rp/directives/init_worker.lua';
     log_by_lua_file '/usr/local/openresty/lualib/rp/directives/log.lua';
     header_filter_by_lua_file '/usr/local/openresty/lualib/rp/directives/header_filter.lua';
     body_filter_by_lua_file '/usr/local/openresty/lualib/rp/directives/body_filter.lua';
-    proxy_cache_path local levels=1:2 keys_zone=proxy_cache:10m max_size=10g inactive=60m use_temp_path=off;
+    proxy_cache_path /proxy_cache levels=1:2 keys_zone=proxy_cache:10m max_size=10g inactive=60m use_temp_path=off;
+    uwsgi_cache_path /uwsgi_cache levels=1:2 keys_zone=uwsgi_cache:10m max_size=10g inactive=60m use_temp_path=off;
     include       mime.types;
     default_type  application/octet-stream;
     access_log  off;
@@ -61,6 +62,7 @@ http {
             proxy_cache_revalidate on;
             proxy_cache proxy_cache;
             set $proxy_to "";
+            set $x_request_id "";
             set $service "{{ $key }}";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
             proxy_http_version 1.1;
@@ -73,11 +75,13 @@ http {
         {{- end -}}
         {{- if (eq $type "uwsgi") }}
             uwsgi_cache_revalidate on;
-            uwsgi_cache proxy_cache;
+            uwsgi_cache uwsgi_cache;
             set $proxy_to "";
+            set $x_request_id "";
             set $service "{{ $key }}";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
             include uwsgi_params;
+            uwsgi_param $x_request_id $x_request_id;
             uwsgi_pass $proxy_to;
         {{- end -}}
         {{- if (eq $type "file") -}}
@@ -99,18 +103,22 @@ http {
             content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_fluentd.lua';
         {{- end }}
         }
-    {{- end -}}
+    {{- end }}
         location /status {
+            set $service "";
             add_header Content-Type text/plain;
             return 200 "OK";
         }
         location /signin {
+            set $service "";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_signin.lua";
         }
         location /metrics {
+            set $service "";
             content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_metrics.lua';
         }
         location /swagger.json {
+            set $service "";
             content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_swagger.lua';
         }
 #        location /artifacts {

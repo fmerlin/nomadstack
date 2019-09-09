@@ -1,0 +1,36 @@
+[PARSER]
+    Name   nginx
+    Format regex
+    Regex ^(?<time>[^ ]* [^ ]) [(?<level>\S+)] (?<code>(\d#\d)): (?<smessage>.*)$
+    Time_Key time
+    Time_Format %Y/%m/%d:%H:%M:%S
+
+[PARSER]
+    Name   json
+    Format json
+    Time_Key time
+    Time_Format %d/%b/%Y:%H:%M:%S %z
+
+[PARSER]
+    Name        docker-daemon
+    Format      regex
+    Regex       time="(?<time>[^ ]*)" level=(?<level>[^ ]*) msg="(?<msg>[^ ].*)"
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L
+    Time_Keep   On
+
+[PARSER]
+    Name        syslog-rfc3164
+    Format      regex
+    Regex       /^(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/
+    Time_Key    time
+    Time_Format %b %d %H:%M:%S
+    Time_Keep   On
+
+[PARSER]
+    Name    mongodb
+    Format  regex
+    Regex   ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
+    Time_Format %Y-%m-%dT%H:%M:%S.%L
+    Time_Keep   On
+    Time_Key time

@@ -2,6 +2,7 @@ import json
 import os
 import nomad
 from ansible.module_utils.basic import AnsibleModule
+from nomad.api.exceptions import BaseNomadException
 
 
 def strip(d):
@@ -42,25 +43,27 @@ def main():
         )
     )
 
-    token = module.params.get('token')
-    token_file = module.params.get('token_file')
-    if token_file:
-        with open(token_file) as f:
-            token = f.read()
-    if token is None:
-        token = os.getenv('NOMAD_TOKEN')
-    n = nomad.Nomad(token=token)
+    try:
+        token = module.params.get('token')
+        token_file = module.params.get('token_file')
+        if token_file:
+            with open(token_file) as f:
+                token = f.read()
+        if token is None:
+            token = os.getenv('NOMAD_TOKEN')
+        n = nomad.Nomad(token=token)
 
-    if module.check_mode:
-        module.exit_json(changed=False)
-    else:
-        n.acl.create_policy(module.params.get('Name'), dict(
-            Name=module.params.get('Name'),
-            Description=module.params.get('Description', ''),
-            Rules=json.dumps(strip(module.params.get('Rules')))
-        ))
-        module.exit_json(changed=True)
-
+        if module.check_mode:
+            module.exit_json(changed=False)
+        else:
+            n.acl.create_policy(module.params.get('Name'), dict(
+                Name=module.params.get('Name'),
+                Description=module.params.get('Description', ''),
+                Rules=json.dumps(strip(module.params.get('Rules')))
+            ))
+            module.exit_json(changed=True)
+    except BaseNomadException as e:
+        module.fail_json(status_code=e.nomad_resp.status_code, msg=e.nomad_resp.text)
 
 if __name__ == '__main__':
     main()

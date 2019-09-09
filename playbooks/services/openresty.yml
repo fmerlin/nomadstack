@@ -7,12 +7,15 @@
         name: "{{openresty.image}}"
         tag: "{{openresty.tag}}"
         push: yes
+        force_source: yes
+        source: build
     - name: init consul
       consul_kv_tree:
         path: openresty
         data:
           endpoints:
           port: 80
+          htpasswd:
     - name: deploy job
       nomad_job:
         ID: openresty
@@ -20,7 +23,7 @@
         Datacenters: ["{{consul.datacenter}}"]
         Type: "system"
         TaskGroups:
-          Name: "openresty"
+        - Name: "openresty"
           Tasks:
             - Name: "openresty"
               Driver: "docker"
@@ -29,7 +32,8 @@
                 network_mode: "host"
                 volumes:
                   - "local/openresty.conf:/usr/local/openresty/nginx/conf/nginx.conf"
-                  - "local/htpasswd:/etc/nginx/htpasswd"
+                  - "local/uwsgi_cache:/uwsgi_cache"
+                  - "local/proxy_cache:/proxy_cache"
                 logging:
                   type: "fluentd"
                   config:
@@ -37,15 +41,15 @@
                   - tag: "docker.openresty"
                   - fluentd-async-connect: "true"
               Env:
-                OAUTH: "{'client_id': '', 'client_secret': '', 'scope': ''300'', 'response_type': 'token', 'signin_url': '', 'details_url': ''}"
-                REDIS: "{'host': '127.0.0.1', 'port': {{redis.port}}, 'timeout': 300, 'idle': 3600, 'pool_size': 3}"
-                RIAK: "{'host': '127.0.0.1', 'port': 8098, 'timeout': 300, 'key': ''}"
-                CONSUL: "{''host': '127.0.0.1', 'port': {{consul.port}}, 'timeout': 300}"
-                FLUENTD: "{'host': '127.0.0.1', 'port': {{fluentbit.port}}, 'timeout': 300}"
-                NOMAD: "{'url':'http://127.0.0.1:{{nomad.port}}'}"
+                OAUTH: ' {"client_id": "", "client_secret": "", "scope": "300", "response_type": "token", "signin_url": "", "details_url": ""}'
+                REDIS: ' {"host": "127.0.0.1", "port": {{redis.port}}, "timeout": 300, "idle": 3600, "pool_size": 3}'
+                RIAK: ' {"host": "127.0.0.1", "port": 8098, "timeout": 300, "key": ""}'
+                CONSUL: ' {"host": "127.0.0.1", "port": {{consul.port}}, "timeout": 300}'
+                FLUENTD: ' {"host": "127.0.0.1", "port": {{fluentbit.port}}, "timeout": 300}'
+                NOMAD: ' {"url":"http://127.0.0.1:{{nomad.port}}"}'
               Resources:
                 CPU: 100
-                MemoryMB: 500
+                MemoryMB: 100
                 Networks:
                 - MBits: 1
                   ReservedPorts:
@@ -56,10 +60,10 @@
                   DestPath: "local/openresty.conf"
                   ChangeMode: "signal"
                   ChangeSignal: "SIGHUP"
-                - EmbeddedTmpl: !unsafe '{{ keyOrDefault "nginx/htpasswd" "" }}'
-                  DestPath: "local/htpasswd"
-                  ChangeMode: "signal"
-                  ChangeSignal: "SIGHUP"
+#                - EmbeddedTmpl: !unsafe '{{ keyOrDefault "openresty/htpasswd" "" }}'
+#                  DestPath: "local/htpasswd"
+#                  ChangeMode: "signal"
+#                  ChangeSignal: "SIGHUP"
               Services:
               - Name: "openresty"
                 PortLabel: "http"
@@ -68,20 +72,20 @@
                     Path: "/status"
                     Interval: 10_000_000_000
                     Timeout: 2_000_000_000
-            - ID: "tcpdump"
-              Driver: "raw_exec"
-              Config:
-                command: "tcpdump"
-                args:
-                  - "-i"
-                  - "enp0s3:"
-                  - "port"
-                  - "80"
-                  - "and"
-                  - "'tcp[13]&4!=0'"
-                logging:
-                  type: "fluentd"
-                  config:
-                  - fluentd-address: "localhost:{{fluentbit.port}}"
-                  - tag: "tcpdump"
-                  - fluentd-async-connect: "true"
+#            - Name: "tcpdump"
+#              Driver: "raw_exec"
+#              Config:
+#                command: "tcpdump"
+#                args:
+#                  - "-i"
+#                  - "enp0s3:"
+#                  - "port"
+#                  - "80"
+#                  - "and"
+#                  - "'tcp[13]&4!=0'"
+#                logging:
+#                  type: "fluentd"
+#                  config:
+#                  - fluentd-address: "localhost:{{fluentbit.port}}"
+#                  - tag: "tcpdump"
+#                  - fluentd-async-connect: "true"

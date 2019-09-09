@@ -1,0 +1,39 @@
+- hosts: localhost
+  tasks:
+    - name: deploy job
+      nomad_job:
+        ID: "grafana"
+        Name: "grafana"
+        Datacenters:
+         - "{{consul.datacenter}}"
+        Type: "service"
+        TaskGroups:
+          - Name: "grafana"
+            EphemeralDisk:
+              SizeMB: 300
+              Sticky: true
+              Migrate: true
+            Tasks:
+            - Name: "grafana"
+              Driver: "docker"
+              Config:
+                image: "{{grafana.image}}"
+                network_mode: "host"
+                volumes:
+                  - "local:/var/lib/grafana"
+              Resources:
+                CPU: 100
+                MemoryMB: 300
+                Networks:
+                - MBits: 1
+                  ReservedPorts:
+                  - Label: "http"
+                    Value: "{{ grafana.port }}"
+              Services:
+              - Name: "grafana"
+                PortLabel: "http"
+                Checks:
+                - Type: "http"
+                  Path: "/api/health"
+                  Interval: 10_000_000_000
+                  Timeout: 2_000_000_000

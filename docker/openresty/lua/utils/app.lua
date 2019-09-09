@@ -2,6 +2,8 @@ local cmessagepack = require("MessagePack")
 local riak = require("rp.utils.riak")
 local oauth = require("rp.utils.oauth")
 local fluentd = require("rp.utils.fluentd")
+local nomad = require("rp.utils.nomad")
+local balancer = require("ngx.balancer")
 
 local _M = {}
 
@@ -14,8 +16,9 @@ function _M.uuid()
 end
 
 function _M.load_session()
+    fluentd.debug('app', 'loading session')
     ngx.ctx.args = ngx.req.get_uri_args()
-    ngx.var.x_request_id = uuid()
+    ngx.var.x_request_id = _M.uuid()
     local session = ngx.var.cookie_x_session
     if session ~= nil then
         ngx.ctx.session = session
@@ -34,6 +37,7 @@ function _M.load_session()
 end
 
 function _M.save_session()
+    fluentd.debug('app', 'save_session')
     if ngx.ctx.session == nil then
         ngx.ctx.session = _M.uuid()
     end
@@ -43,6 +47,7 @@ function _M.save_session()
 end
 
 function _M.should_auth()
+    fluentd.debug('app', 'should_auth')
     local s = ngx.var.service
     local u = ngx.var.uri:sub(s:len() + 2)
     local restrictions = ngx.shared.rp_cache:get('restrictions/' .. s)
@@ -62,6 +67,7 @@ function _M.should_auth()
 end
 
 function _M.load_settings()
+    fluentd.debug('app', 'load_settings')
     local key = ngx.header['X-API-KEY']
     if key then
         ngx.ctx.api_key = key
@@ -127,11 +133,13 @@ function _M.check(map)
 end
 
 function _M.set_upstream()
+    fluentd.debug('app', 'set_upstream')
     local versions = cmessagepack.unpack(ngx.shared.rp_cache:get('versions/' .. ngx.var.service))
     ngx.var.proxy_to = versions[ngx.ctx.settings.version or '']
 end
 
 function _M.throttle()
+    fluentd.debug('app', 'throttle')
     local settings = ngx.ctx.settings
     local l = ngx.shared.rp_cache:get('throttle/' .. ngx.ctx.api_key)
     if l then
@@ -141,51 +149,40 @@ function _M.throttle()
     end
 
     local n = ngx.now()
-    local mx = n - (settings.max_time or 1000000)
+    local d = (settings.max_time or 1) * (settings.max_req or 100) / (settings.max_par or 10)
+    local mx = n - d
 
     while #l > 0 and l[1] < mx do
         table.remove(l, 1)
     end
 
-    if #l > (settings.max_req or 1000000) then
+    if #l > (settings.max_req or 100) then
         ngx.exit(ngx.HTTP_TOO_MANY_REQUESTS)
     end
 
     table.insert(l, n)
-    ngx.shared.rp_cache:set('throttle/' .. ngx.ctx.api_key, cmessagepack.pack(l), settings.max_time or 1000000)
+    ngx.shared.rp_cache:set('throttle/' .. ngx.ctx.api_key, cmessagepack.pack(l), d)
 
-    local t = (l[settings.max_par or 1] or 0) - mx
+    local t = l[#l] + math.floor((#l - 1)  / (settings.max_par or 10)) * (settings.max_time or 1) - n
     if t > 0 then
+        ngx.ctx.throttling = t
         ngx.sleep(t)
+    else
+        ngx.ctx.throttling = 0
     end
-    ngx.ctx.throttling = max(t, 0)
 end
 
 function _M.balance(is_sticky)
+    fluentd.debug('app', 'balance')
     local up = is_sticky and ngx.var.cookie_x_upstream
     local upstream = 'upstreams/' .. ngx.var.proxy_to
     local hosts = ngx.shared.rp_cache:get(upstream)
     hosts = hosts and cmessagepack.unpack(hosts) or {}
     local mn = 1000000
     local host
+    local type = ngx.shared.rp_cache:get('type/' .. ngx.var.service)
 
-    if #hosts == 0 then
-        nomad.add_job()
-        local try = 1
-        while #hosts == 0 do
-            if try > 10 then
-                fluentd.error('balancer', { message = "no upstream found" })
-                return ngx.exit(ngx.HTTP_BAD_GATEWAY)
-            end
-            try = try + 1
-            ngx.sleep(1)
-            hosts = cmessagepack.unpack(ngx.shared.rp_cache:get(upstream))
-        end
-        host = hosts[1]
-        ngx.ctx.nb_hosts = 1
-        fluentd.info('balancer', { message = "job, added", host = host })
-    else
-        ngx.ctx.nb_hosts = #hosts
+    if #hosts > 1 then
         for i, h in ipairs(hosts) do
             if is_sticky and h.id == up then
                 host = h
@@ -197,6 +194,17 @@ function _M.balance(is_sticky)
                 mn = n
             end
         end
+    elseif #hosts == 1 then
+        host = hosts[1]
+    elseif type == 'uwsgi' then
+        nomad.add_job()
+        local try = 1
+        while #hosts == 0 and try < 10 do
+            try = try + 1
+            ngx.sleep(1)
+            hosts = cmessagepack.unpack(ngx.shared.rp_cache:get(upstream))
+        end
+        host = hosts[1]
     end
 
     if host == nil then
@@ -208,6 +216,7 @@ function _M.balance(is_sticky)
         _M.add_cookie("x_upstream", host.id, 3600)
     end
     ngx.ctx.host = host
+    ngx.ctx.nb_hosts = #hosts
     ngx.shared.rp_cache:incr('connections/' .. host.address, 1, 0)
     local ok, err = balancer.set_current_peer(host.address, host.port)
     if err then
@@ -217,12 +226,14 @@ function _M.balance(is_sticky)
 end
 
 function _M.write_cookies()
+    fluentd.debug('app', 'write_cookies')
     if ngx.ctx.cookies and #ngx.ctx.cookies > 0 then
         ngx.header["Set-Cookie"] = ngx.ctx.cookies
     end
 end
 
 function _M.add_cookie(name, value, expires)
+    fluentd.debug('app', 'add_cookie')
     if ngx.ctx.cookies == nil then
         ngx.ctx.cookies = {}
     end
@@ -231,6 +242,7 @@ function _M.add_cookie(name, value, expires)
 end
 
 function _M.cors()
+    fluentd.debug('app', 'cors')
     local origin = ngx.req.get_headers()["Origin"]
     if origin then
         ngx.header["Access-Control-Expose-Headers"] = ""
@@ -243,28 +255,32 @@ function _M.cors()
 end
 
 function _M.end_request()
-    local body = ngx.ctx.resp_body
-    if ngx.ctx.host then
-        ngx.shared.rp_cache:incr('connections/' .. ngx.ctx.host.address, -1)
+    if ngx.var.service ~= '' then
+        fluentd.debug('app', 'end_request')
+        local body = ngx.ctx.resp_body
+        if ngx.ctx.host then
+            ngx.shared.rp_cache:incr('connections/' .. ngx.ctx.host.address, -1)
+        end
+        if body and ngx.header['Content-Type'] == 'application/json' then
+            body = cjson.decode(body)
+        end
+        fluentd.info('request', { duration = ngx.now() - ngx.req.start_time(),
+                                  throttle = ngx.ctx.throttling or 0,
+                                  args = ngx.ctx.args or {},
+                                  uri = ngx.var.uri,
+                                  body = body or '',
+                                  node = ngx.ctx.host and ngx.ctx.host.id or '',
+                                  nb_hosts = ngx.var.nb_hosts or 0,
+                                  upstream = ngx.var.proxy_to or '',
+                                  status = ngx.var.status or 0})
     end
-    if body and ngx.header['Content-Type'] == 'application/json' then
-        body = cjson.decode(body)
-    end
-    fluentd.info('request', { duration = ngx.now() - ngx.req.start_time(),
-                             throttle = ngx.ctx.throttling or 0,
-                             args = ngx.ctx.args or {},
-                             uri = ngx.var.uri,
-                             body = body or '',
-                             node = ngx.ctx.host and ngx.ctx.host.id or '',
-                             nb_hosts = ngx.var.nb_hosts or 0,
-                             upstream = ngx.var.proxy_to or '',
-                             status = ngx.var.status or 0})
 end
 
 function _M.collect_metrics()
+    fluentd.debug('app', 'collect_metrics')
     function add_line(res, name, args, value)
         local atts = {}
-        for k, v in args do
+        for k, v in pairs(args) do
             table.insert(atts, k .. '="' .. v .. '"')
         end
         table.insert(res, name .. '{' .. table.concat(atts, ',') .. '} ' .. value .. '\n')
@@ -273,10 +289,14 @@ function _M.collect_metrics()
     local count = {}
     local keys = ngx.shared.rp_cache:get_keys()
     for i, key in ipairs(keys) do
-        local cat = key:gmatch("([^,]+)")[1]
+        local cat = key:match("([^/]*)")
         local v = ngx.shared.rp_cache:get(key)
         if v then
-            sum[cat] = (sum[cat] or 0) + v:len()
+            if type(v) == 'string' then
+                sum[cat] = (sum[cat] or 0) + v:len()
+            else
+                sum[cat] = (sum[cat] or 0) + 1
+            end
         else
             sum[cat] = (sum[cat] or 0) + (ngx.shared.rp_cache:llen(key) or 0)
         end
@@ -299,6 +319,7 @@ function _M.collect_metrics()
 end
 
 function _M.get_open_api()
+    fluentd.debug('app', 'get_open_api')
     local tags = {}
     local paths = {}
     local securityDefinitions = {}

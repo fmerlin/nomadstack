@@ -21,7 +21,7 @@ def kv_put(c, path, data, check_mode):
         elif type(v) == dict:
             changed |= kv_put(c, path + '/' + k, v, check_mode)
         else:
-            changed |= kv_put_one(c, path + '/' + k[:-5], str(v), check_mode)
+            changed |= kv_put_one(c, path + '/' + k, str(v), check_mode)
     return changed
 
 
@@ -45,14 +45,17 @@ def main():
     host = module.params.get('host')
     port = module.params.get('port')
 
-    if token_file:
-        with open(token_file) as f:
-            token = f.read()
-    if token is None:
-        token = os.getenv('CONSUL_HTTP_TOKEN')
-    c = consul.Consul(host=host, port=port, token=token)
-    changed = kv_put(c, path, data, module.check_mode)
-    module.exit_json(changed=changed)
+    try:
+        if token_file:
+            with open(token_file) as f:
+                token = f.read()
+        if token is None:
+            token = os.getenv('CONSUL_HTTP_TOKEN')
+        c = consul.Consul(host=host, port=port, token=token)
+        changed = kv_put(c, path, data, module.check_mode)
+        module.exit_json(changed=changed)
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ local var_phases = {
     set=true,
     rewrite=true,
     access=true,
+    balancer=true,
     content=true,
     header_filter=true,
     body_filter=true,
@@ -24,6 +25,10 @@ function _M.remote_log(tag, data)
     ngx.timer.at(0, _M.send, cmessagepack.pack({ 'app.' .. tag, ngx.time(), r }))
 end
 
+function _M.debug(tag, data)
+    _M.log(tag, 'debug', {message = data})
+end
+
 function _M.info(tag, data)
     _M.log(tag, 'info', data)
 end
@@ -34,13 +39,15 @@ end
 
 function _M.log(tag, level, data)
     local r
-    if var_phases[ngx.get_phase()] == true then
+    local phase = ngx.get_phase()
+    if var_phases[phase] == true then
         r = { service = ngx.var.service,
               user = ngx.var.remote_user,
               host = ngx.var.remote_addr,
               key = ngx.ctx.api_key,
               log_level = level,
               request = ngx.var.x_request_id,
+              phase = phase,
               session = ngx.ctx.session }
         for k, v in pairs(data) do
             r[k] = v
@@ -48,6 +55,7 @@ function _M.log(tag, level, data)
     else
         r = data or {}
         r['log_level'] = level
+        r['phase'] = phase
     end
     ngx.timer.at(0, _M.send, cmessagepack.pack({ 'openresty.' .. tag, ngx.time(), r }))
 end

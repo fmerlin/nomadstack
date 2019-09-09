@@ -29,10 +29,11 @@
                 /app:
                   - admin
               versions.json:
-                prod: v1
-                dev: v2
+                prod: uwsgi
+                dev: uwsgi
           geo:
             zone:
+              dev: default
               prod: 10.1.0.1,10.1.0.2
           port: 80
     - name: deploy job
@@ -59,7 +60,7 @@
                     - fluentd-async-connect: "true"
                 Resources:
                   CPU: 100
-                  MemoryMB: 1024
+                  MemoryMB: 300
                   Networks:
                     - MBits: 1
                       DynamicPorts:
@@ -75,6 +76,6 @@
                     Checks:
                       - Type: "script"
                         Command: "uwsgi_curl"
-                        Args: ["${NOMAD_ADDR_uwsgi)/health"]
+                        Args: ["${NOMAD_ADDR_uwsgi}/health"]
                         Interval: 10_000_000_000
                         Timeout: 2_000_000_000

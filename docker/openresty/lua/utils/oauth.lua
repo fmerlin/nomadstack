@@ -1,4 +1,5 @@
 local cjson = require("cjson")
+local fluentd = require("rp.utils.fluentd")
 
 local _M = cjson.decode(os.getenv("OAUTH") or "{}")
 
@@ -7,6 +8,7 @@ function _M.get_base_url()
 end
 
 function _M.login()
+    fluentd.debug("oauth", "login")
     app.add_cookie("x_redirect_uri", ngx.var.request_uri, 60)
     return ngx.redirect(_M.signin_url .. '?' .. ngx.encode_args({ client_id = _M.client_id,
                                                                   scope = _M.scope,
@@ -15,6 +17,7 @@ function _M.login()
 end
 
 function _M.load_user_info()
+    fluentd.debug("oauth", "load_user_info")
     local res, err
     local args = ngx.ctx.args
     local uri_args = {
@@ -48,6 +51,7 @@ function _M.load_user_info()
 end
 
 function _M.extract_bearer()
+    fluentd.debug("oauth", "extract_bearer")
     local auth = ngx.header["Authorization"]
     if auth then
         local jwt_obj, err = jwt:verify(_M.jwt_secret, auth.sub(8)) -- len("Bearer: ")

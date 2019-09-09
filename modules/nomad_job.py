@@ -2,6 +2,7 @@ import json
 import os
 import nomad
 from ansible.module_utils.basic import AnsibleModule
+from nomad.api.exceptions import BaseNomadException
 
 
 def strip(d):
@@ -215,24 +216,27 @@ def main():
         supports_check_mode=True
     )
 
-    name = module.params.get('ID')
-    token = module.params.get('token')
-    token_file = module.params.get('token_file')
-    data = dict(Job=filter(module.params, ['token', 'token_file']))
+    try:
+        name = module.params.get('ID')
+        token = module.params.get('token')
+        token_file = module.params.get('token_file')
+        data = dict(Job=filter(module.params, ['token', 'token_file']))
 
-    if token_file:
-        with open(token_file) as f:
-            token = f.read()
-    if token is None:
-        token = os.getenv('NOMAD_TOKEN')
-    n = nomad.Nomad(token=token)
+        if token_file:
+            with open(token_file) as f:
+                token = f.read()
+        if token is None:
+            token = os.getenv('NOMAD_TOKEN')
+        n = nomad.Nomad(token=token)
 
-    if module.check_mode:
-        res = n.validate.validate_job(data).json()
-        module.exit_json(changed=False, **res)
-    else:
-        res = n.job.register_job(name, data)
-        module.exit_json(changed=True, **res)
+        if module.check_mode:
+            res = n.validate.validate_job(data).json()
+            module.exit_json(changed=False, **res)
+        else:
+            res = n.job.register_job(name, data)
+            module.exit_json(changed=True, **res)
+    except BaseNomadException as e:
+        module.fail_json(status_code=e.nomad_resp.status_code, msg=e.nomad_resp.text, params=strip(module.params))
 
 
 if __name__ == '__main__':
