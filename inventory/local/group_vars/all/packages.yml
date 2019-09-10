@@ -1,3 +1,7 @@
+docker:
+  port: 2375
+  registry: "nexus.service.consul:5000"
+
 consul:
   url: https://releases.hashicorp.com/consul/1.6.0
   file: consul_1.6.0_linux_amd64.zip

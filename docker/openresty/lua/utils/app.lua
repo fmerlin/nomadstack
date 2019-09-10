@@ -4,6 +4,7 @@ local oauth = require("rp.utils.oauth")
 local fluentd = require("rp.utils.fluentd")
 local nomad = require("rp.utils.nomad")
 local balancer = require("ngx.balancer")
+local cjson = require("cjson")
 
 local _M = {}
 
@@ -134,13 +135,19 @@ end
 
 function _M.set_upstream()
     fluentd.debug('app', 'set_upstream')
-    local versions = cmessagepack.unpack(ngx.shared.rp_cache:get('versions/' .. ngx.var.service))
-    ngx.var.proxy_to = versions[ngx.ctx.settings.version or '']
+    local versions = ngx.shared.rp_cache:get('versions/' .. ngx.var.service)
+    if versions then
+        versions = cmessagepack.unpack(versions)
+        ngx.var.proxy_to = versions[ngx.ctx.settings.version or '']
+    else
+        fluentd.error('balancer', { message = "no upstream found" })
+        return ngx.exit(ngx.HTTP_BAD_GATEWAY)
+    end
 end
 
 function _M.throttle()
     fluentd.debug('app', 'throttle')
-    local settings = ngx.ctx.settings
+    local settings = ngx.ctx.settings or {}
     local l = ngx.shared.rp_cache:get('throttle/' .. ngx.ctx.api_key)
     if l then
         l = cmessagepack.unpack(l)
@@ -226,8 +233,8 @@ function _M.balance(is_sticky)
 end
 
 function _M.write_cookies()
-    fluentd.debug('app', 'write_cookies')
     if ngx.ctx.cookies and #ngx.ctx.cookies > 0 then
+        fluentd.debug('app', 'write_cookies')
         ngx.header["Set-Cookie"] = ngx.ctx.cookies
     end
 end
@@ -242,15 +249,17 @@ function _M.add_cookie(name, value, expires)
 end
 
 function _M.cors()
-    fluentd.debug('app', 'cors')
-    local origin = ngx.req.get_headers()["Origin"]
-    if origin then
-        ngx.header["Access-Control-Expose-Headers"] = ""
-        ngx.header["Access-Control-Allow-Headers"] = ""
-        ngx.header["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE"
-        ngx.header["Access-Control-Allow-Credentials"] = "false"
-        ngx.header["Access-Control-Max-Age"] = 7200
-        ngx.header["Access-Control-Allow-Origin"] = origin
+    if ngx.var.service ~= '' then
+        fluentd.debug('app', 'cors')
+        local origin = ngx.req.get_headers()["Origin"]
+        if origin then
+            ngx.header["Access-Control-Expose-Headers"] = ""
+            ngx.header["Access-Control-Allow-Headers"] = ""
+            ngx.header["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE"
+            ngx.header["Access-Control-Allow-Credentials"] = "false"
+            ngx.header["Access-Control-Max-Age"] = 7200
+            ngx.header["Access-Control-Allow-Origin"] = origin
+        end
     end
 end
 
@@ -272,11 +281,13 @@ function _M.end_request()
                                   node = ngx.ctx.host and ngx.ctx.host.id or '',
                                   nb_hosts = ngx.var.nb_hosts or 0,
                                   upstream = ngx.var.proxy_to or '',
+                                  server = ngx.ctx.host.id or '',
                                   status = ngx.var.status or 0})
     end
 end
 
 function _M.collect_metrics()
+    local add_line
     fluentd.debug('app', 'collect_metrics')
     function add_line(res, name, args, value)
         local atts = {}

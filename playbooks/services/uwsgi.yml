@@ -76,6 +76,6 @@
                     Checks:
                       - Type: "script"
                         Command: "uwsgi_curl"
-                        Args: ["${NOMAD_ADDR_uwsgi}/health"]
+                        Args: ["${NOMAD_ADDR_uwsgi}", "/health"]
                         Interval: 10_000_000_000
                         Timeout: 2_000_000_000

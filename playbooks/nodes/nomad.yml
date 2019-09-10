@@ -17,6 +17,12 @@
         pip: name=python-nomad
       - name: copy systemd unit
         copy: src="../../resources/etc/systemd/system/nomad.service" dest=/etc/systemd/system/nomad.service mode=0755 owner=nomad group=docker
+      - name: get consul key
+        read_file: src="/etc/consul.key"
+        register: _consul_key
+      - name: get vault key
+        read_file: src="/etc/vault.key"
+        register: _vault_key
       - name: copy nomad config
         template: src="../../templates/etc/nomad.json" dest=/etc/nomad.json  mode=0755 owner=nomad group=docker
       - name: start nomad

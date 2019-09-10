@@ -4,7 +4,7 @@ local cjson = require("cjson")
 
 local _M = cjson.decode(os.getenv("NOMAD") or "{}")
 
-function check(res, err)
+function _M.check(res, err)
     if err then
         fluentd.error("nomad", {message="failed to start a job", err=err})
         ngx.exit(ngx.HTTP_BAD_GATEWAY)
@@ -14,7 +14,7 @@ end
 
 function _M.add_job()
     fluentd.debug("nomad", "add_job")
-    check(http.post(_M, {path='/v1/jobs'}, _M.gen_job(ngx.var.proxy_to)))
+    _M.check(http.post(_M, {path='/v1/jobs'}, _M.gen_job(ngx.var.proxy_to)))
 end
 
 function _M.gen_job(svc)

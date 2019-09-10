@@ -6,6 +6,7 @@ local fluentd = require("rp.utils.fluentd")
 local _M = cjson.decode(os.getenv("REDIS") or "{}")
 
 function _M.connect()
+    local check, subscribe
     function check(msg, res, err)
         if not res then
             fluentd.error('', {message=msg, err=err})
@@ -17,7 +18,7 @@ function _M.connect()
     -- Redis
     function subscribe(redis_srv, ws_srv)
         while true do
-            res, err = redis_srv:read_reply()
+            local res, err = redis_srv:read_reply()
             if res then
                 local f = io.open(res[3], "rb")
                 if f then

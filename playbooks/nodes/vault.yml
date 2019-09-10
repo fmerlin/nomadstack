@@ -17,6 +17,9 @@
         copy: src="../../resources/etc/systemd/system/vault.service" dest=/etc/systemd/system/vault.service mode=0755 owner=vault group=docker
       - name: create fake unseal script
         copy: content="" dest=/usr/local/bin/vault_unseal mode=700 owner=vault
+      - name: get consul key
+        read_file: src="/etc/consul.key"
+        register: _consul_key
       - name: copy vault json
         template: src="../../templates/etc/vault.json" dest=/etc/vault.json mode=0755 owner=vault group=docker
       - name: start vault

@@ -57,10 +57,11 @@ geo ${{ $v }} {
     {{ end }}
     {{ range $key, $pairs := tree (print $openresty "/endpoints/") | byKey -}}
     {{- $type := (keyOrDefault  (print $openresty "/endpoints/" $key "/type") "") -}}
-        location /{{ $key }} {
+        location /{{ $key }}/ {
         {{- if (eq $type "proxy") }}
             proxy_cache_revalidate on;
             proxy_cache proxy_cache;
+            proxy_cache_key $request_uri;
             set $proxy_to "";
             set $x_request_id "";
             set $service "{{ $key }}";
@@ -74,14 +75,16 @@ geo ${{ $v }} {
             proxy_pass http://$proxy_to$request_uri;
         {{- end -}}
         {{- if (eq $type "uwsgi") }}
+            include uwsgi_params;
             uwsgi_cache_revalidate on;
             uwsgi_cache uwsgi_cache;
+            uwsgi_cache_key $request_uri;
             set $proxy_to "";
             set $x_request_id "";
             set $service "{{ $key }}";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
-            include uwsgi_params;
-            uwsgi_param $x_request_id $x_request_id;
+            uwsgi_param X_REQUEST_ID $x_request_id;
+            uwsgi_param SCRIPT_NAME /{{ $key }};
             uwsgi_pass $proxy_to;
         {{- end -}}
         {{- if (eq $type "file") -}}

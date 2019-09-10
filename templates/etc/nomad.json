@@ -27,12 +27,12 @@
   },
   "consul": {
     "address": "127.0.0.1:{{ consul.port }}",
-    "token": "{{ _consul.json.SecretID }}"
+    "token": "{{ _consul_key.data }}"
   },
   "vault": {
     "enabled": false,
     "address": "http://127.0.0.1:{{ vault.port }}",
-    "token": "{{ _vault.json.root_token }}"
+    "token": "{{ _vault_key.data }}"
   },
   "telemetry": {
     "publish_allocation_metrics": true,

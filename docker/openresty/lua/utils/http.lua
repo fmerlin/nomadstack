@@ -35,7 +35,7 @@ function _M.post(server, args, data)
     local headers = args:get('headers', {})
     headers['Content-Type'] = 'application/json'
     args['headers'] = headers
-    args['body'] = json.encode(data)
+    args['body'] = cjson.encode(data)
     args['method'] = 'POST'
     return _M.get(server, args)
 end

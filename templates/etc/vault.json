@@ -17,7 +17,7 @@
     "consul": {
       "address": "127.0.0.1:{{consul.port}}",
       "path": "vault",
-      "token": "{{ _consul.json.SecretID }}"
+      "token": "{{ _consul_key.data }}"
     }
   },
   "max_lease_ttl": "10h",

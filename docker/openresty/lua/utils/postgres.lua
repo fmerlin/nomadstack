@@ -5,7 +5,7 @@ local pgmoon_arrays = require('pgmoon')
 
 local _M = cjson.decode(os.getenv("POSTGRES") or {})
 
-function is_in(val, lst)
+function _M.is_in(val, lst)
     for i, e in ipairs(lst) do
         if e == val then
             return true
@@ -14,10 +14,10 @@ function is_in(val, lst)
     return false
 end
 
-function format(config, values)
+function _M.format(config, values)
     local conds = {}
     for k,v in pairs(values) do
-        if is_in(k, config.fields) then
+        if _M.is_in(k, config.fields) then
             if type(v) == 'string' then
                 table.insert(conds, k .. '="' .. v .. '"')
             else
@@ -38,14 +38,14 @@ function _M.pg_crud()
     local config = cmessagepack.unpack(ngx.shared.rp_cache:get('config/' .. ngx.var.service))
     pg:connect()
     if m == 'GET' then
-        res = pg:query('select ' .. table.concat(config.fields,',') .. ' from ' .. config.table .. ' where ' .. table.concat(format(config, ngx.ctx.args),' and '))
+        res = pg:query('select ' .. table.concat(config.fields,',') .. ' from ' .. config.table .. ' where ' .. table.concat(_M.format(config, ngx.ctx.args),' and '))
     elseif m == 'POST' then
         local body = cjson.decode(ngx.var.request_body)
         local fields = {}
         local data = {}
         for i,b in ipairs(body) do
             for k,v in pairs(b) do
-                if is_in(k, config.fields) then
+                if _M.is_in(k, config.fields) then
                     table.insert(fields, k)
                     table.insert(data, v)
                 end
@@ -54,9 +54,9 @@ function _M.pg_crud()
         end
     elseif m == 'PUT' then
         local body = cjson.decode(ngx.var.request_body)
-        res = pg:query('update ' .. config.table .. ' set ' .. table.concat(format(config, body),' and ') .. ' where ' .. table.concat(format(config, ngx.ctx.args),' and '))
+        res = pg:query('update ' .. config.table .. ' set ' .. table.concat(_M.format(config, body),' and ') .. ' where ' .. table.concat(_M.format(config, ngx.ctx.args),' and '))
     elseif m == 'DELETE' then
-        res = pg:query('delete from ' .. config.table .. ' where ' .. table.concat(format(config, ngx.ctx.args),' and '))
+        res = pg:query('delete from ' .. config.table .. ' where ' .. table.concat(_M.format(config, ngx.ctx.args),' and '))
     end
     pg:keepalive()
     return res

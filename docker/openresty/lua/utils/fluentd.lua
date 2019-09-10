@@ -41,7 +41,7 @@ function _M.log(tag, level, data)
     local r
     local phase = ngx.get_phase()
     if var_phases[phase] == true then
-        r = { service = ngx.var.service,
+        r = { service =  ngx.var.service,
               user = ngx.var.remote_user,
               host = ngx.var.remote_addr,
               key = ngx.ctx.api_key,

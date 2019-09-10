@@ -7,15 +7,16 @@ cjson.decode_array_with_array_mt(true)
 
 local _M = cjson.decode(os.getenv("CONSUL") or "{}")
 
-function service_update(premature, service, myindex)
+function _M.service_update(premature, service, myindex)
     local delay = 0
     local data, headers, err = http.get(_M, {
         path = '/v1/health/service/' .. service,
         query = { index = myindex }
     })
-    if err then
+    if err == 'timeout' then
+        delay = 0
+    elseif err then
         fluentd.error("consul", {message="failed to query the service", err=err})
-        ngx.shared.rp_cache:delete('upstreams/' .. service)
         delay = 10
     else
         myindex = headers['X-Consul-Index']
@@ -31,15 +32,13 @@ function service_update(premature, service, myindex)
                 end
             end
         end
-        if ngx.shared.rp_cache:get('upstreams/' .. service) == nil then
-            fluentd.info("consul", {message="new service", service=service, upstreams=res})
-        end
         ngx.shared.rp_cache:set('upstreams/' .. service, cmessagepack.pack(res))
+        fluentd.info("consul", {message="update service", service=service, upstreams=res})
     end
-    ngx.timer.at(delay, service_update, service, myindex)
+    ngx.timer.at(delay, _M.service_update, service, myindex)
 end
 
-function split(s, p)
+function _M.split(s, p)
     local res = {}
     for e in s:gmatch("([^" .. p .. "]+)") do
         table.insert(res, e)
@@ -47,21 +46,23 @@ function split(s, p)
     return res
 end
 
-function kv_update(premature, myindex)
+function _M.kv_update(premature, myindex)
     local delay = 0
     local path = '/v1/kv/' .. (os.getenv('NGINX') or 'openresty') .. '/endpoints'
     local data, headers, err = http.get(_M, {
         path=path,
         query={index = myindex, recurse = 'true'}
     })
-    if err then
+    if err == 'timeout' then
+        delay = 0
+    elseif err then
         fluentd.error("consul", {message="failed to query the kv", err=err, url='http://' .. _M.host .. ':' .. _M.port .. '/' .. path})
         delay = 10
     else
         myindex = headers['X-Consul-Index']
         local swaggers = {}
         for i,e in ipairs(data) do
-            local svcs = split(e.Key,"/")
+            local svcs = _M.split(e.Key,"/")
             local svc = svcs[#svcs - 1]
             local v = ngx.decode_base64(e.Value)
             if svcs[#svcs] == 'rules' then
@@ -80,7 +81,7 @@ function kv_update(premature, myindex)
                     for t,up in pairs(c) do
                         if ngx.shared.rp_cache:get('upstreams/' .. up) == nil then
                             ngx.shared.rp_cache:set('upstreams/' .. up, cmessagepack.pack({}))
-                            ngx.timer.at(0, service_update, up, '0')
+                            ngx.timer.at(0, _M.service_update, up, '0')
                         end
                     end
                 end
@@ -100,14 +101,14 @@ function kv_update(premature, myindex)
         end
         ngx.shared.rp_cache:set('swagger/definitions', cmessagepack.pack(swaggers))
     end
-    ngx.timer.at(delay, kv_update, myindex)
+    ngx.timer.at(delay, _M.kv_update, myindex)
 end
 
 function _M.connect()
     local ok, err = ngx.shared.rp_cache:add('locks/consul', true)
     if ok then
         fluentd.info("consul", {message="starting consul monitoring"})
-        ngx.timer.at(0, kv_update, '0')
+        ngx.timer.at(0, _M.kv_update, '0')
     end
 end
 

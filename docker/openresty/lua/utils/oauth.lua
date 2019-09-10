@@ -1,5 +1,6 @@
 local cjson = require("cjson")
 local fluentd = require("rp.utils.fluentd")
+local jwt = require("resty.jwt")
 
 local _M = cjson.decode(os.getenv("OAUTH") or "{}")
 
