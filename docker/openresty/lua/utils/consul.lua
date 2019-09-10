@@ -65,10 +65,14 @@ function _M.kv_update(premature, myindex)
             local svcs = _M.split(e.Key,"/")
             local svc = svcs[#svcs - 1]
             local v = ngx.decode_base64(e.Value)
-            if svcs[#svcs] == 'rules' then
-                local c, err = cjson.decode(v)
-                if c then
-                    ngx.shared.rp_cache:set('rules/' .. svc, cmessagepack.pack(c))
+            for kind in ipairs({'rules', 'restrictions', 'job'}) do
+                if svcs[#svcs] == kind then
+                    local c, err = cjson.decode(v)
+                    if c then
+                        ngx.shared.rp_cache:set(kind .. '/' .. svc, cmessagepack.pack(c))
+                    else
+                        ngx.log(ngx.ERR, "cannot decode json", err)
+                    end
                 end
             end
             if svcs[#svcs] == 'versions' then
@@ -84,12 +88,8 @@ function _M.kv_update(premature, myindex)
                             ngx.timer.at(0, _M.service_update, up, '0')
                         end
                     end
-                end
-            end
-            if svcs[#svcs] == 'restrictions' then
-                local c, err = cjson.decode(v)
-                if c then
-                    ngx.shared.rp_cache:set('restrictions/' .. svc, cmessagepack.pack(c))
+                else
+                    ngx.log(ngx.ERR, "cannot decode json", err)
                 end
             end
             if svcs[#svcs] == 'type' then

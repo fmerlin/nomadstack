@@ -85,7 +85,7 @@
 [OUTPUT]
     Name  file
     Match docker.*
-    Path /log/fluentbit.log
+    Path /log/fluentbit-docker.log
 
 [OUTPUT]
     Name  file

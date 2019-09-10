@@ -25,57 +25,23 @@
                     max_req: 10
                     max_time: 60
               type: uwsgi
+              job.json:
+                image: "{{uwsgi.image}}"
+                disk: 100
+                cpu: 300
+                mbits: 1
+                memory: 300
+                uwsgi:
+                  threadss: 2
+                  processes: 2
               restrictions.json:
                 /app:
                   - admin
               versions.json:
-                prod: uwsgi
-                dev: uwsgi
+                prod: v1
+                dev: v1
           geo:
             zone:
               dev: default
               prod: 10.1.0.1,10.1.0.2
           port: 80
-    - name: deploy job
-      nomad_job:
-        ID: uwsgi
-        Name: uwsgi
-        Datacenters: ["{{consul.datacenter}}"]
-        Type: "service"
-        TaskGroups:
-          - Name: "uwsgi"
-            Tasks:
-              - Name: "uwsgi"
-                Driver: "docker"
-                Config:
-                  image: "{{uwsgi.image}}:{{uwsgi.tag}}"
-                  network_mode: "host"
-                  volumes:
-                    - "local/uwsgi.ini:/app/uwsgi.ini"
-                  logging:
-                    type: "fluentd"
-                    config:
-                    - fluentd-address: "localhost:{{fluentbit.port}}"
-                    - tag: "docker.uwsgi"
-                    - fluentd-async-connect: "true"
-                Resources:
-                  CPU: 100
-                  MemoryMB: 300
-                  Networks:
-                    - MBits: 1
-                      DynamicPorts:
-                        - Label: "uwsgi"
-                Templates:
-                  - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/uwsgi.ini.ctmpl') }}"
-                    DestPath: "local/uwsgi.ini"
-                    ChangeMode: "signal"
-                    ChangeSignal: "SIGHUP"
-                Services:
-                  - Name: "uwsgi"
-                    PortLabel: "uwsgi"
-                    Checks:
-                      - Type: "script"
-                        Command: "uwsgi_curl"
-                        Args: ["${NOMAD_ADDR_uwsgi}", "/health"]
-                        Interval: 10_000_000_000
-                        Timeout: 2_000_000_000

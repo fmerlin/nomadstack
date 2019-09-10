@@ -11,4 +11,4 @@ VOLUME /app
 
 EXPOSE 8089
 WORKDIR /app
-ENTRYPOINT ["uwsgi", "--ini", "/app/uwsgi.ini"]
+ENTRYPOINT ["uwsgi", "--json", "/app/uwsgi.json"]
