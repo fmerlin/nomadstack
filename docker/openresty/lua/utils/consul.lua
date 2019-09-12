@@ -7,6 +7,15 @@ cjson.decode_array_with_array_mt(true)
 
 local _M = cjson.decode(os.getenv("CONSUL") or "{}")
 
+function _M.get_version(items)
+    for i, item in ipairs(items) do
+        if item:sub(1,1) == 'v'then
+            return item
+        end
+        return nil
+    end
+end
+
 function _M.service_update(premature, service, myindex)
     local delay = 0
     local data, headers, err = http.get(_M, {
@@ -26,7 +35,7 @@ function _M.service_update(premature, service, myindex)
                 if c.ServiceName == service and (c.Status == 'passing' or c.Status == 'warning') then
                     table.insert(res,{ id = e.Service.ID,
                         port = e.Service.Port,
-                        version = e.Service.Meta.version,
+                        version = e.Service.Meta.version or _M.get_version(e.Service.Tags),
                         address = e.Node.Address or 'localhost'
                     })
                     break
@@ -83,12 +92,6 @@ function _M.kv_update(premature, myindex)
                 local c, err = cjson.decode(v)
                 if c then
                     ngx.shared.rp_cache:set('versions/' .. svc, cmessagepack.pack(c))
-                    for t,up in pairs(c) do
-                        if ngx.shared.rp_cache:get('upstreams/' .. up) == nil then
-                            ngx.shared.rp_cache:set('upstreams/' .. up, cmessagepack.pack({}))
-                            ngx.timer.at(0, _M.service_update, up, '0')
-                        end
-                    end
                 else
                     fluentd.error("consul", {message="cannot decode json", err=err})
                 end
@@ -97,6 +100,10 @@ function _M.kv_update(premature, myindex)
                 ngx.shared.rp_cache:set('type/' .. svc, v)
                 if v == 'uwsgi' or v == 'proxy' then
                     table.insert(swaggers, '/' .. svc .. '/swagger.json')
+                end
+                if ngx.shared.rp_cache:get('upstreams/' .. svc) == nil then
+                    ngx.shared.rp_cache:set('upstreams/' .. svc, cmessagepack.pack({}))
+                    ngx.timer.at(0, _M.service_update, svc, '0')
                 end
             end
         end

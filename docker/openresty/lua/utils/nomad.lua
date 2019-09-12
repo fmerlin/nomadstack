@@ -14,11 +14,19 @@ function _M.add_job(service, version)
             path = '/v1/jobs',
             headers = { ["X-Nomad-Token"] = os.getenv("NOMAD_TOKEN") } },
                 _M.gen_job(service, version, config))
-        if err then
-            fluentd.error("nomad", { message = "failed to start a job", err = err })
-            ngx.exit(ngx.HTTP_BAD_GATEWAY)
-        end
+        --        if err then
+        --            fluentd.error("nomad", { message = "failed to start a job", err = err })
+        --            ngx.exit(ngx.HTTP_BAD_GATEWAY)
+        --        end
     end
+end
+
+function _M.gen_ini(config)
+    local res = { '[uwsgi]' }
+    for k, v in pairs(config) do
+        table.insert(res, k .. '=' .. tostring(v))
+    end
+    return table.concat(res, '\n')
 end
 
 function _M.gen_job(service, version, config)
@@ -27,13 +35,14 @@ function _M.gen_job(service, version, config)
         idle = 1800,
         chdir = "/app/",
         ["wsgi-file"] = "$(WSGI_FILE)",
-        socket = '{{ env "NOMAD_ADDR_uwsgi" }}',
+        socket = '{{ env "NOMAD_ADDR_wsgi" }}',
         protocol = 'uwsgi',
         ["disable-logging"] = true,
         processes = 1,
         threads = 1,
         master = true,
         mount = '/' .. service .. '=app.py',
+        ["manage-script-name"] = true,
         module = 'app',
         callable = 'app'
     }
@@ -57,9 +66,6 @@ function _M.gen_job(service, version, config)
                                  Config = {
                                      image = config.image .. ':' .. version,
                                      network_mode = "host",
-                                     volumes = {
-                                         "secrets/uwsgi.json:/app/uwsgi.json"
-                                     },
                                      logging = {
                                          type = "fluentd",
                                          config = {
@@ -74,10 +80,37 @@ function _M.gen_job(service, version, config)
                                      REDIS = os.getenv("REDIS"),
                                      FLUENTD = os.getenv("FLUENTD")
                                  },
+                                 Meta = {
+                                     version = version
+                                 },
                                  Vault = {
                                      Policies = config.policies or {},
                                      ChangeMode = "signal",
                                      ChangeSignal = "SIGHUP"
+                                 },
+                                 Templates = {
+                                     { EmbeddedTmpl = _M.gen_ini(d),
+                                       DestPath = "secrets/uwsgi.ini",
+                                       ChangeMode = "signal",
+                                       ChangeSignal = "SIGHUP" }
+                                 },
+                                 Services = {
+                                     { Name = service,
+                                       Tags = { version, "wsgi" },
+                                       Meta = {
+                                           version = version
+                                       },
+                                       PortLabel = "wsgi",
+                                       Checks = {
+                                           {
+                                               Type = "script",
+                                               Command = "uwsgi_curl",
+                                               Args = { "${NOMAD_ADDR_wsgi}", "/health" },
+                                               Interval = (config.interval or 10) * 1000000000,
+                                               Timeout = (config.timeout or 2) * 1000000000
+                                           }
+                                       }
+                                     }
                                  },
                                  Resources = {
                                      CPU = config.cpu or 100,
@@ -86,30 +119,6 @@ function _M.gen_job(service, version, config)
                                          { MBits = config.network or 1,
                                            DynamicPorts = {
                                                { Label = "wsgi" }
-                                           }
-                                         }
-                                     },
-                                     Templates = {
-                                         { EmbeddedTmpl = cjson.encode({ uwsgi = d }),
-                                           DestPath = "secrets/uwsgi.json",
-                                           ChangeMode = "signal",
-                                           ChangeSignal = "SIGHUP" }
-                                     },
-                                     Services = {
-                                         { Name = service,
-                                           Tags = { version, "wsgi" },
-                                           Meta = {
-                                               version = version
-                                           },
-                                           PortLabel = "wsgi",
-                                           Checks = {
-                                               {
-                                                   Type = "script",
-                                                   Command = "uwsgi_curl",
-                                                   Args = { "${NOMAD_ADDR_uwsgi}", "/health" },
-                                                   Interval = (config.interval or 10) * 1000000000,
-                                                   Timeout = (config.timeout or 2) * 1000000000
-                                               }
                                            }
                                          }
                                      }

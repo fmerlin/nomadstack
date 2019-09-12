@@ -195,7 +195,7 @@ function _M.balance(is_sticky)
                 fluentd.error('balance', { message = "no upstream found" })
                 return ngx.exit(ngx.HTTP_BAD_GATEWAY)
             end
-            if try == 1 then
+            if try == 1 and type == 'uwsgi' then
                 nomad.add_job(service, ngx.ctx.version)
             end
             ngx.sleep(1)

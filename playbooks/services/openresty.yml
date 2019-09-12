@@ -47,7 +47,7 @@
                 CONSUL: ' {"host": "127.0.0.1", "port": {{consul.port}}, "timeout": 300}'
                 FLUENTD: ' {"host": "127.0.0.1", "port": {{fluentbit.port}}, "timeout": 300}'
                 NOMAD: ' {"host": "127.0.0.1", "port": {{nomad.port}}, "timeout": 300}'
-                NOMAD_TOKEN: '{{ loopup("env", "NOMAD_TOKEN") }}'
+                NOMAD_TOKEN: '{{ lookup("env", "NOMAD_TOKEN") }}'
               Resources:
                 CPU: 100
                 MemoryMB: 100

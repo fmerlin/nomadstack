@@ -31,7 +31,7 @@ def main():
             name=module.params.get('name'),
             policy=hcl
         )
-        module.exit_json(changed=True, **res)
+        module.exit_json(changed=True)
     except Exception as e:
         module.fail_json(msg=e.args[0])
 
