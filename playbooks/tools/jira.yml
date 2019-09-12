@@ -33,6 +33,7 @@
               Services:
               - Name: "jira"
                 PortLabel: "http"
+                Tags: ["http"]
                 Checks:
                 - Type: "http"
                   Path: "/jira/status"

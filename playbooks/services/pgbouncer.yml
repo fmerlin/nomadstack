@@ -7,7 +7,6 @@
         name: nexus.service.consul/paas/uwsgi
         tag: v1
         push: yes
-    - name:
     - name: deploy job
       nomad_job:
         ID: pgbouncer
@@ -23,7 +22,7 @@
                 image: "pgbouncer"
                 network_mode: "host"
                 volumes:
-                  - "local/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini"
+                  - "secrets/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini"
                 logging:
                   type: "fluentd"
                   config:
@@ -40,7 +39,7 @@
                     Value: "{{ pgbouncer.port }}"
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pgbouncer.ini.ctmpl') }}"
-                  DestPath: "local/pgbouncer.ini"
+                  DestPath: "secrets/pgbouncer.ini"
                   Change_mode: "signal"
                   Change_signal: "SIGHUP"
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/users.txt.ctmpl') }}"
@@ -50,6 +49,7 @@
               Services:
                 - Name: "pgbouncer"
                   PortLabel: "pgbouncer"
+                  Tags: ["postgres"]
                   Checks:
                     - Type: "tcp"
                       Interval: 10_000_000_000

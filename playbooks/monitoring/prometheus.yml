@@ -20,11 +20,11 @@
                 network_mode: "host"
                 volume_driver: local
                 volumes:
-                  - "./local/prometheus.yml:/etc/prometheus/prometheus.yml"
+                  - "./secrets/prometheus.yml:/etc/prometheus/prometheus.yml"
                   - "prometheus-data:/prometheus-data"
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/prometheus.yml.ctmpl') }}"
-                  DestPath: "local/prometheus.yml"
+                  DestPath: "secrets/prometheus.yml"
                   ChangeMode: "signal"
                   ChangeSignal: "SIGHUP"
               Resources:
@@ -38,7 +38,7 @@
               Services:
               - Name: "prometheus"
                 PortLabel: "prometheus"
-                Tags: ["urlprefix-/"]
+                Tags: ["http"]
                 Checks:
                 - Type: "http"
                   Path: "/-/healthy"

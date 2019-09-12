@@ -24,9 +24,9 @@
         read_file: src="/etc/vault.key"
         register: _vault_key
       - name: copy nomad config
-        template: src="../../templates/etc/nomad.json" dest=/etc/nomad.json  mode=0755 owner=nomad group=docker
+        template: src="../../resources/etc/nomad.json" dest=/etc/nomad.json  mode=0755 owner=nomad group=docker
       - name: start nomad
-        systemd: name=nomad state=started daemon_reload=yes
+        systemd: name=nomad state=started daemon_reload=yes enabled=yes
       - name: bootstrap acl
         uri: url="http://localhost:{{nomad.port}}/v1/acl/bootstrap" method=PUT return_content=yes body_format=json
         until: _nomad.status == 200
@@ -37,17 +37,17 @@
         copy: content="{{_nomad.json.SecretID}}" dest=/etc/nomad.key group=docker mode=0640
       - name: Set NOMAD_TOKEN
         lineinfile:
-          dest: /etc/environment
+          dest: /etc/environment.d/docker
           state: present
-          regexp: '^NOMAD_TOKEN'
-          line: 'NOMAD_TOKEN={{_nomad.json.SecretID}}'
+          regexp: 'NOMAD_TOKEN'
+          line: 'export NOMAD_TOKEN={{_nomad.json.SecretID}}'
       - name: Set NOMAD_ADDR
         lineinfile:
           dest: /etc/environment
           state: present
           regexp: '^NOMAD_ADDR'
           line: 'NOMAD_ADDR=http://127.0.0.1:{{ nomad.port }}'
-      - name: set nomad policies
+      - name: set nomad anonymous policies
         nomad_acl:
           token: "{{_nomad.json.SecretID}}"
           Name: anonymous
@@ -63,4 +63,20 @@
               policy: read
             quota:
               policy: read
+      - name: set vault policy for nomad
+        vault_policy:
+          token: "{{ _vault_key }}"
+          name: nomad-server
+          capabilities:
+            auth/token/create/nomad-cluster: ["update"]
+            auth/token/roles/nomad-cluster: ["read"]
+            auth/token/lookup-self: ["read"]
+            auth/token/lookup: ["update"]
+            auth/token/revoke-accessor: ["update"]
+            auth/token/renew-self: ["update"]
+            sys/capabilities-self: ["update"]
+      - name: add nomad secrets engine
+        shell: "vault secrets enable nomad"
+        environment:
+          VAULT_TOKEN: "{{ _vault_key }}"
       when: not stat_result.stat.exists

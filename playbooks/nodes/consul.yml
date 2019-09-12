@@ -24,7 +24,7 @@
       - name: copy systemd unit
         template: src="../../resources/etc/systemd/system/consul.service" dest=/etc/systemd/system/  mode=0755 owner=consul group=docker
       - name: copy consul config
-        template: src="../../templates/etc/consul.json" dest=/etc/consul.json  mode=0755 owner=consul group=docker
+        template: src="../../resources/etc/consul.json" dest=/etc/consul.json  mode=0755 owner=consul group=docker
       - name: install psutil
         pip: name=psutil
       - name: install python consul
@@ -32,7 +32,7 @@
       - name: install python hcl
         pip: name=pyhcl
       - name: copy script
-        copy: src=../../resources/check_node.py dest=/usr/local/consul/check_node.py mode=0755
+        copy: src=../../resources/python/check_node.py dest=/usr/local/consul/check_node.py mode=0755
       - name: start consul
         systemd: name=consul state=started daemon_reload=yes enabled=yes
       - name: bootstrap acl
@@ -45,10 +45,10 @@
         copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key mode=0640 group=docker
       - name: Set CONSUL_HTTP_TOKEN
         lineinfile:
-          dest: /etc/environment
+          dest: /etc/environment.d/docker
           state: present
-          regexp: '^CONSUL_HTTP_TOKEN'
-          line: 'CONSUL_HTTP_TOKEN={{_consul.json.SecretID}}'
+          regexp: 'CONSUL_HTTP_TOKEN'
+          line: 'export CONSUL_HTTP_TOKEN={{_consul.json.SecretID}}'
       - name: Set CONSUL_HTTP_ADDR
         lineinfile:
           dest: /etc/environment

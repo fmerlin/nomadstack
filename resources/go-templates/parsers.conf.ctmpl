@@ -1,7 +1,7 @@
 [PARSER]
     Name   nginx
     Format regex
-    Regex ^(?<time>[^ ]* [^ ]) [(?<level>\S+)] (?<code>(\d#\d)): (?<smessage>.*)$
+    Regex ^(?<time>\S+ \S+) [(?<level>\S+)] (?<code>(\d#\d)): (?<smessage>.*)$
     Time_Key time
     Time_Format %Y/%m/%d:%H:%M:%S
 

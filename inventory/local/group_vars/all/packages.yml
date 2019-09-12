@@ -46,11 +46,11 @@ prometheus:
   port: 9090
 
 openresty:
-  image: nexus.service.consul:5000/paas/openresty
+  image: "{{docker.registry}}/paas/openresty"
   tag: v1
 
 postgres:
-  image: nexus.service.consul:5000/paas/postgres
+  image: "{{docker.registry}}/paas/postgres"
   tag: v1
   port: 5432
   password: azerty
@@ -68,7 +68,7 @@ terraform:
   file: terraform_0.12.5_linux_amd64.zip
 
 uwsgi:
-  image: nexus.service.consul:5000/paas/uwsgi
+  image: "{{docker.registry}}/paas/uwsgi"
   tag: v1
 
 redis:
@@ -86,3 +86,7 @@ confluence:
 jira:
   image: atlasssian/jira-software
   port: 8080
+
+riak:
+  image: basho/riak-kv
+  port: 8098

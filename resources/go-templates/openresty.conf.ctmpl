@@ -12,6 +12,9 @@ env RIAK;
 env CONSUL;
 env FLUENTD;
 env NOMAD;
+env NOMAD_DC;
+env VAULT_TOKEN;
+env NOMAD_TOKEN;
 http {
 {{ range $v, $p1 := tree (print $openresty "/geo/") | byKey -}}
 geo ${{ $v }} {
@@ -38,14 +41,7 @@ geo ${{ $v }} {
     client_max_body_size 2000M;
     sendfile        on;
     keepalive_timeout  65;
-{{range services}}
-{{- $name := .Name -}}
-    upstream {{$name}} {
-        server 127.0.0.1;
-        zone http-{{$name}} 64k;
-        balancer_by_lua_file '/usr/local/openresty/lualib/rp/directives/balancer_http.lua';
-    }
-{{end}}
+
     server {
         server_name {{ $server_name }};
     {{ if ne (env "NOMAD_HOST_PORT_http") "" }}
@@ -86,6 +82,19 @@ geo ${{ $v }} {
             uwsgi_param X_REQUEST_ID $x_request_id;
             uwsgi_pass $proxy_to;
         {{- end -}}
+        {{- if (eq $type "grpc") -}}
+            set $proxy_to "";
+            set $x_request_id "";
+            set $service "{{ $key }}";
+            access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
+            grpc_bind $remote_addr transparent;
+            grpc_set_header Upgrade $http_upgrade;
+            grpc_set_header Connection "upgrade";
+            grpc_set_header Host $proxy_host;
+            grpc_set_header X-Forwarded-For $remote_addr;
+            grpc_set_header X-Request-ID $x_request_id;
+            grpc_pass grpc://$proxy_to;
+        {{- end -}}
         {{- if (eq $type "file") -}}
             set $service "{{ $key }}";
             set $proxy_to "";
@@ -95,14 +104,14 @@ geo ${{ $v }} {
         {{- if (eq $type "redis") -}}
             set $service "{{ $key }}";
             lua_check_client_abort on;
-            content_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_redis.lua";
+            content_by_lua_file "/usr/local/openresty/lualib/rp/directives/content_redis.lua";
         {{- end }}
         {{- if (eq $type "fluentd") -}}
             limit_except POST {
                deny all;
             }
             set $service "{{ $key }}";
-            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_fluentd.lua';
+            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/content_fluentd.lua';
         {{- end }}
         }
     {{- end }}
@@ -117,11 +126,11 @@ geo ${{ $v }} {
         }
         location /metrics {
             set $service "";
-            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_metrics.lua';
+            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/content_metrics.lua';
         }
         location /swagger.json {
             set $service "";
-            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/access_swagger.lua';
+            content_by_lua_file '/usr/local/openresty/lualib/rp/directives/content_swagger.lua';
         }
 #        location /artifacts {
 #            create_full_put_path on;

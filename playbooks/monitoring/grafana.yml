@@ -32,6 +32,7 @@
               Services:
               - Name: "grafana"
                 PortLabel: "http"
+                Tags: ["http"]
                 Checks:
                 - Type: "http"
                   Path: "/api/health"

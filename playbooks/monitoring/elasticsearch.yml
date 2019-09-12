@@ -16,7 +16,7 @@
                   network_mode: "host"
                   volumes:
                     - "local:/usr/share/elasticsearch/data"
-                    - "local/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
+                    - "secrets/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
                 Env:
                   discovery.type: single-node
                 Resources:
@@ -31,12 +31,13 @@
                           Value: "{{ elasticsearch.transport_port }}"
                 Templates:
                   - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/elasticsearch.yml.ctmpl') }}"
-                    DestPath: "local/elasticsearch.yml"
+                    DestPath: "secrets/elasticsearch.yml"
                     ChangeMode: "signal"
                     ChangeSignal: "SIGHUP"
                 Services:
                   - Name: "elasticsearch"
                     PortLabel: "http"
+                    Tags: ["http"]
                     Checks:
                       - Type: "http"
                         Path: "/_cluster/health"

@@ -31,7 +31,7 @@
                 image: "{{openresty.image}}:{{openresty.tag}}"
                 network_mode: "host"
                 volumes:
-                  - "local/openresty.conf:/usr/local/openresty/nginx/conf/nginx.conf"
+                  - "secrets/openresty.conf:/usr/local/openresty/nginx/conf/nginx.conf"
                   - "local/uwsgi_cache:/uwsgi_cache"
                   - "local/proxy_cache:/proxy_cache"
                 logging:
@@ -43,10 +43,11 @@
               Env:
                 OAUTH: ' {"client_id": "", "client_secret": "", "scope": "300", "response_type": "token", "signin_url": "", "details_url": ""}'
                 REDIS: ' {"host": "127.0.0.1", "port": {{redis.port}}, "timeout": 300, "idle": 3600, "pool_size": 3}'
-                RIAK: ' {"host": "127.0.0.1", "port": 8098, "timeout": 300, "key": ""}'
+                RIAK: ' {"host": "127.0.0.1", "port": {{riak.port}}, "timeout": 300, "key": ""}'
                 CONSUL: ' {"host": "127.0.0.1", "port": {{consul.port}}, "timeout": 300}'
                 FLUENTD: ' {"host": "127.0.0.1", "port": {{fluentbit.port}}, "timeout": 300}'
-                NOMAD: ' {"url":"http://127.0.0.1:{{nomad.port}}"}'
+                NOMAD: ' {"host": "127.0.0.1", "port": {{nomad.port}}, "timeout": 300}'
+                NOMAD_TOKEN: '{{ loopup("env", "NOMAD_TOKEN") }}'
               Resources:
                 CPU: 100
                 MemoryMB: 100
@@ -57,16 +58,21 @@
                     Value: 80
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/openresty.conf.ctmpl') }}"
-                  DestPath: "local/openresty.conf"
+                  DestPath: "secrets/openresty.conf"
                   ChangeMode: "signal"
                   ChangeSignal: "SIGHUP"
 #                - EmbeddedTmpl: !unsafe '{{ keyOrDefault "openresty/htpasswd" "" }}'
 #                  DestPath: "local/htpasswd"
 #                  ChangeMode: "signal"
 #                  ChangeSignal: "SIGHUP"
+              Vault:
+                  Policies: ["nomad-server"]
+                  ChangeMode: "signal"
+                  ChangeSignal: "SIGHUP"
               Services:
               - Name: "openresty"
                 PortLabel: "http"
+                Tags: ["http"]
                 Checks:
                   - Type: "http"
                     Path: "/status"

@@ -25,7 +25,7 @@
                   image: "redis"
                   network_mode: "host"
                   volumes:
-                    - "local/redis.conf:/usr/local/etc/redis/redis.conf"
+                    - "secrets/redis.conf:/usr/local/etc/redis/redis.conf"
                   logging:
                     type: "fluentd"
                     config:
@@ -42,12 +42,13 @@
                           Value: "{{redis.port}}"
                 Templates:
                   - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/redis.conf.ctmpl') }}"
-                    DestPath: "local/redis.conf"
+                    DestPath: "secrets/redis.conf"
                     ChangeMode: "signal"
                     ChangeSignal: "SIGHUP"
                 Services:
                   - Name: "redis"
                     PortLabel: "redis"
+                    Tags: ["redis"]
                     Checks:
                       - Type: "script"
                         Command: "redis-cli"

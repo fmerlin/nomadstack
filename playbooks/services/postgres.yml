@@ -27,10 +27,10 @@
                 mounts:
                   - type: bind
                     target: /var/lib/postgresql/data/postgres.conf
-                    source: local/postgres.conf
+                    source: secrets/postgres.conf
                   - type: bind
                     target: /var/lib/postgresql/data/pg_hba.conf
-                    source: local/pg_hba.conf
+                    source: secrets/pg_hba.conf
                   - type: volume
                     target: /var/lib/postgresql/data/pgdata
                     source: pg_data
@@ -55,11 +55,11 @@
                     Value: "{{postgres.port}}"
               Templates:
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/postgres.conf.ctmpl') }}"
-                  DestPath: "local/postgres.conf"
+                  DestPath: "secrets/postgres.conf"
                   ChangeMode: "signal"
                   ChangeSignal: "SIGHUP"
                 - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/pg_hba.conf.ctmpl') }}"
-                  DestPath: "local/pg_hba.conf"
+                  DestPath: "secrets/pg_hba.conf"
                   ChangeMode: "signal"
                   ChangeSignal: "SIGHUP"
               Services:

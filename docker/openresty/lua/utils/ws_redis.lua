@@ -58,7 +58,7 @@ function _M.connect()
         elseif typ == "ping" then
             check("failed to send pong: ", ws_srv:send_pong())
         elseif typ == "pong" then
-            ngx.log(ngx.INFO, "client ponged")
+            fluentd.debug("redis", "client ponged")
         elseif typ == "text" then
             check("failed to send text: ", redis_srv:publish(ngx.var.service, data))
         elseif typ == "binary" then

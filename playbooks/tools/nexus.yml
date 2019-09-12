@@ -40,6 +40,7 @@
                 Services:
                   - Name: "nexus"
                     PortLabel: "http"
+                    Tags: ["http"]
                     Checks:
                       - Type: "http"
                         Path: "/nexus/service/rest/v1/status"

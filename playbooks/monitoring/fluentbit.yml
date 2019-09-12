@@ -15,16 +15,16 @@
               image: "{{fluentbit.image}}"
               network_mode: "host"
               volumes:
-                - "local/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf"
-                - "local/parsers.conf:/fluent-bit/etc/parsers.conf"
+                - "secrets/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf"
+                - "secrets/parsers.conf:/fluent-bit/etc/parsers.conf"
                 - "/var/log/fluentbit:/log/"
                 - "/var/log/syslog:/var/log/syslog.host:ro"
             Templates:
               - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/fluent-bit.conf.ctmpl') }}"
-                DestPath: "local/fluent-bit.conf"
+                DestPath: "secrets/fluent-bit.conf"
                 ChangeMode: "restart"
               - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/parsers.conf.ctmpl') }}"
-                DestPath: "local/parsers.conf"
+                DestPath: "secrets/parsers.conf"
                 ChangeMode: "restart"
             Resources:
               CPU: 200
@@ -36,4 +36,5 @@
                       Value: "{{ fluentbit.port }}"
             Services:
               - Name: "fluentbit"
+                Tags: ["fluentd"]
                 PortLabel: "forward"

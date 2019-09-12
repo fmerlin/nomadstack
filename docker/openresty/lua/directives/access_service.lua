@@ -8,4 +8,5 @@ else
     app.load_settings()
     app.throttle()
     app.set_upstream()
+    app.balance(true)
 end

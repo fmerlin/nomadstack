@@ -167,6 +167,7 @@ def main():
                         Id=dict(type='str'),
                         Name=dict(type='str'),
                         Tags=dict(type='list', elements='str'),
+                        Meta=dict(type='dict'),
                         PortLabel=dict(type='str'),
                         AddressMode=dict(type='str'),
                         Checks=dict(type='list', elements='dict', options=dict(

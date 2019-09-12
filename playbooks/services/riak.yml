@@ -1,0 +1,42 @@
+- hosts: localhost
+  tasks:
+    - name: deploy job
+      nomad_job:
+        ID: riak
+        Name: riak
+        Datacenters: ["{{consul.datacenter}}"]
+        Type: "service"
+        TaskGroups:
+          - Name: "riak"
+            Tasks:
+              - Name: "riak"
+                Driver: "docker"
+                Config:
+                  image: "{{riak.image}}"
+                  network_mode: "host"
+                  volumes:
+                    - "local/schemas:/etc/riak/schemas"
+                    - "local/data:/var/lib/riak"
+                  logging:
+                    type: "fluentd"
+                    config:
+                      - fluentd-address: "localhost:{{fluentbit.port}}"
+                      - tag: "docker.riak"
+                      - fluentd-async-connect: "true"
+                Resources:
+                  CPU: 100
+                  MemoryMB: 500
+                  Networks:
+                    - MBits: 1
+                      ReservedPorts:
+                        - Label: "http"
+                          Value: "{{riak.port}}"
+                Services:
+                  - Name: "riak"
+                    PortLabel: "http"
+                    Tags: ["http"]
+                    Checks:
+                      - Type: "http"
+                        Path: "/explore/ping"
+                        Interval: 10_000_000_000
+                        Timeout: 2_000_000_000

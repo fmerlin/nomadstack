@@ -19,6 +19,16 @@
     - name: reset connection to allow user changes to affect 'current login user'
       meta: reset_connection
     - name: copy docker conf
-      template: src=../../templates/etc/docker/daemon.json dest=/etc/docker/ owner="{{ ansible_user }}" group=docker mode=0660
+      template: src=../../resources/etc/docker/daemon.json dest=/etc/docker/ owner="{{ ansible_user }}" group=docker mode=0640
+    - name: create /etc/systemd/system/docker.service.d
+      file: path=/etc/systemd/system/docker.service.d state=directory group=docker mode=0750
+    - name: copy docker override
+      template: src=../../resources/etc/systemd/system/docker.service.d/override.conf dest=/etc/systemd/system/docker.service.d/ owner="{{ ansible_user }}" group=docker mode=0640
     - name: restart docker
       service: name=docker state=restarted
+    - name: copy docker profile
+      copy: src=../../resources/etc/profile.d/docker.sh dest=/etc/profile.d group=docker mode=0644
+    - name: create /etc/environment.d
+      file: path=/etc/environment.d state=directory mode=0755
+    - name: copy docker profile
+      copy: content="" dest=/etc/environment.d/docker group=docker mode=0660

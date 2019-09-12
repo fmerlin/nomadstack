@@ -29,6 +29,7 @@
               Services:
               - Name: "rundeck"
                 PortLabel: "http"
+                Tags: ["http"]
                 Checks:
                 - Type: "http"
                   Path: "/api/2/system/info"

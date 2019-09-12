@@ -30,6 +30,7 @@
               Services:
               - Name: "confluence"
                 PortLabel: "http"
+                Tags: ["http"]
                 Checks:
                 - Type: "http"
                   Path: "/confluence/status"

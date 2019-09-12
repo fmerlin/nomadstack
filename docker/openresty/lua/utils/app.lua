@@ -138,7 +138,7 @@ function _M.set_upstream()
     local versions = ngx.shared.rp_cache:get('versions/' .. ngx.var.service)
     if versions then
         versions = cmessagepack.unpack(versions)
-        ngx.var.proxy_to = versions[ngx.ctx.settings.version or '']
+        ngx.ctx.version = versions[ngx.ctx.settings.version or '']
     else
         fluentd.error('balancer', { message = "no upstream found" })
         return ngx.exit(ngx.HTTP_BAD_GATEWAY)
@@ -181,53 +181,58 @@ end
 
 function _M.balance(is_sticky)
     fluentd.debug('app', 'balance')
+    local service = ngx.var.service
     local up = is_sticky and ngx.var.cookie_x_upstream
-    local upstream = 'upstreams/' .. ngx.var.proxy_to
-    local hosts = ngx.shared.rp_cache:get(upstream)
-    hosts = hosts and cmessagepack.unpack(hosts) or {}
     local mn = 1000000
     local host
-    local type = ngx.shared.rp_cache:get('type/' .. ngx.var.service)
+    local hosts
+    local type = ngx.shared.rp_cache:get('type/' .. service)
+    local try = 0
 
-    if #hosts > 1 then
-        for i, h in ipairs(hosts) do
-            if is_sticky and h.id == up then
-                host = h
-                break
+    while host == nil do
+        if try > 0 then
+            if try > 10 or type ~= 'uwsgi' then
+                fluentd.error('balance', { message = "no upstream found" })
+                return ngx.exit(ngx.HTTP_BAD_GATEWAY)
             end
-            local n = ngx.shared.rp_cache:get('connections/' .. h.address)
-            if n < mn then
-                host = h
-                mn = n
+            if try == 1 then
+                nomad.add_job(service, ngx.ctx.version)
             end
-        end
-    elseif #hosts == 1 then
-        host = hosts[1]
-    elseif type == 'uwsgi' then
-        nomad.add_job()
-        local try = 1
-        while #hosts == 0 and try < 10 do
-            try = try + 1
             ngx.sleep(1)
-            hosts = cmessagepack.unpack(ngx.shared.rp_cache:get(upstream))
         end
-        host = hosts[1]
-    end
-
-    if host == nil then
-        fluentd.error('balancer', { message = "no upstream found" })
-        return ngx.exit(ngx.HTTP_BAD_GATEWAY)
+        hosts = ngx.shared.rp_cache:get('upstreams/' .. service)
+        hosts = hosts and cmessagepack.unpack(hosts) or {}
+        for i, h in ipairs(hosts) do
+            if h.version == ngx.ctx.version then
+                if is_sticky and h.id == up then
+                    host = h
+                    break
+                end
+                local n = ngx.shared.rp_cache:get('connections/' .. h.address) or 0
+                if n < mn then
+                    host = h
+                    mn = n
+                end
+            end
+        end
+        try = try + 1
     end
 
     if is_sticky then
         _M.add_cookie("x_upstream", host.id, 3600)
     end
+
     ngx.ctx.host = host
     ngx.ctx.nb_hosts = #hosts
     ngx.shared.rp_cache:incr('connections/' .. host.address, 1, 0)
+    ngx.var.proxy_to = host.address .. ':' .. host.port
+end
+
+function _M.set_peer()
+    local host = ngx.ctx.host
     local ok, err = balancer.set_current_peer(host.address, host.port)
     if err then
-        fluentd.error('balancer', { message = "failed to set the current peer", err = err })
+        fluentd.error('set_peer', { message = "failed to set the current peer", err = err })
         return ngx.exit(ngx.ERROR)
     end
 end
@@ -281,7 +286,7 @@ function _M.end_request()
                                   node = ngx.ctx.host and ngx.ctx.host.id or '',
                                   nb_hosts = ngx.var.nb_hosts or 0,
                                   upstream = ngx.var.proxy_to or '',
-                                  server = ngx.ctx.host.id or '',
+                                  server = ngx.ctx.host and ngx.ctx.host.id or '',
                                   status = ngx.var.status or 0})
     end
 end
@@ -302,16 +307,17 @@ function _M.collect_metrics()
     for i, key in ipairs(keys) do
         local cat = key:match("([^/]*)")
         local v = ngx.shared.rp_cache:get(key)
+        local size = (sum[cat] or 0) + key:len() + 40
+        count[cat] = (count[cat] or 0) + 1
         if v then
             if type(v) == 'string' then
-                sum[cat] = (sum[cat] or 0) + v:len()
-            else
-                sum[cat] = (sum[cat] or 0) + 1
+                sum[cat] = size + v:len()
+            elseif type(v) == 'number' then
+                sum[cat] = size + 8
+            elseif type(v) == 'boolean' then
+                sum[cat] = size + 1
             end
-        else
-            sum[cat] = (sum[cat] or 0) + (ngx.shared.rp_cache:llen(key) or 0)
         end
-        count[cat] = (count[cat] or 0) + 1
     end
 
     local res = {}

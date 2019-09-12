@@ -1,4 +1,4 @@
-FROM openresty/openresty:bionic
+FROM openresty/openresty:1.15.8.2-1-bionic
 
 RUN luarocks install lua-resty-http && \
     luarocks install lua-protobuf && \

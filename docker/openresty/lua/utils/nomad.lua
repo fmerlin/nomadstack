@@ -5,12 +5,15 @@ local cmessagepack = require("MessagePack")
 
 local _M = cjson.decode(os.getenv("NOMAD") or "{}")
 
-function _M.add_job()
+function _M.add_job(service, version)
     fluentd.debug("nomad", "add_job")
-    local config = ngx.shared.rp_cache:get("job/" .. ngx.var.service)
+    local config = ngx.shared.rp_cache:get("job/" .. service)
     if config then
         config = cmessagepack.unpack(config)
-        local res, err = http.post(_M, { path = '/v1/jobs' }, _M.gen_job(ngx.var.service, ngx.var.proxy_to, config))
+        local res, err = http.post(_M, {
+            path = '/v1/jobs',
+            headers = { ["X-Nomad-Token"] = os.getenv("NOMAD_TOKEN") } },
+                _M.gen_job(service, version, config))
         if err then
             fluentd.error("nomad", { message = "failed to start a job", err = err })
             ngx.exit(ngx.HTTP_BAD_GATEWAY)
@@ -55,8 +58,7 @@ function _M.gen_job(service, version, config)
                                      image = config.image .. ':' .. version,
                                      network_mode = "host",
                                      volumes = {
-                                         "secrets/uwsgi.json:/app/uwsgi.json",
-                                         "local:/data"
+                                         "secrets/uwsgi.json:/app/uwsgi.json"
                                      },
                                      logging = {
                                          type = "fluentd",
@@ -72,13 +74,18 @@ function _M.gen_job(service, version, config)
                                      REDIS = os.getenv("REDIS"),
                                      FLUENTD = os.getenv("FLUENTD")
                                  },
+                                 Vault = {
+                                     Policies = config.policies or {},
+                                     ChangeMode = "signal",
+                                     ChangeSignal = "SIGHUP"
+                                 },
                                  Resources = {
                                      CPU = config.cpu or 100,
                                      MemoryMB = config.memory or 300,
                                      Networks = {
                                          { MBits = config.network or 1,
                                            DynamicPorts = {
-                                               { Label = "uwsgi" }
+                                               { Label = "wsgi" }
                                            }
                                          }
                                      },
@@ -90,8 +97,11 @@ function _M.gen_job(service, version, config)
                                      },
                                      Services = {
                                          { Name = service,
-                                           Tags = { version },
-                                           PortLabel = "uwsgi",
+                                           Tags = { version, "wsgi" },
+                                           Meta = {
+                                               version = version
+                                           },
+                                           PortLabel = "wsgi",
                                            Checks = {
                                                {
                                                    Type = "script",

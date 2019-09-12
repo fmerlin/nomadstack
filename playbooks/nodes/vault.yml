@@ -21,7 +21,7 @@
         read_file: src="/etc/consul.key"
         register: _consul_key
       - name: copy vault json
-        template: src="../../templates/etc/vault.json" dest=/etc/vault.json mode=0755 owner=vault group=docker
+        template: src="../../resources/etc/vault.json" dest=/etc/vault.json mode=0755 owner=vault group=docker
       - name: start vault
         systemd: name=vault state=started daemon_reload=yes enabled=yes
       - name: init vault
@@ -44,10 +44,10 @@
         command: "sudo /usr/local/bin/vault_unseal"
       - name: Set VAULT_TOKEN
         lineinfile:
-          dest: /etc/environment
+          dest: /etc/environment.d/docker
           state: present
-          regexp: '^VAULT_TOKEN'
-          line: 'VAULT_TOKEN={{_vault.json.root_token}}'
+          regexp: 'VAULT_TOKEN'
+          line: 'export VAULT_TOKEN={{_vault.json.root_token}}'
       - name: Set VAULT_AGENT_ADDR
         lineinfile:
           dest: /etc/environment
@@ -58,4 +58,10 @@
         pip: name=hvac
       - name: add user pass
         shell: "vault auth enable userpass"
+        environment:
+          VAULT_TOKEN: "{{_vault.json.root_token}}"
+      - name: add consul secrets engine
+        shell: "vault secrets enable consul"
+        environment:
+          VAULT_TOKEN: "{{_vault.json.root_token}}"
       when: not stat_result.stat.exists

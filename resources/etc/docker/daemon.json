@@ -1,6 +1,5 @@
 {
   "dns": ["127.0.0.1", "8.8.8.8", "208.67.222.222"],
   "dns-search": ["service.consul","node.consul"],
-  "host": ["tcp://0.0.0.0:{{docker.port}}"],
   "insecure-registries" : ["{{docker.registry}}"]
 }

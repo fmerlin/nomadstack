@@ -25,8 +25,9 @@ function _M.service_update(premature, service, myindex)
             for j,c in ipairs(e.Checks) do
                 if c.ServiceName == service and (c.Status == 'passing' or c.Status == 'warning') then
                     table.insert(res,{ id = e.Service.ID,
-                                       port = e.Service.Port,
-                                       address = e.Node.Address or 'localhost'
+                        port = e.Service.Port,
+                        version = e.Service.Meta.version,
+                        address = e.Node.Address or 'localhost'
                     })
                     break
                 end
@@ -65,13 +66,13 @@ function _M.kv_update(premature, myindex)
             local svcs = _M.split(e.Key,"/")
             local svc = svcs[#svcs - 1]
             local v = ngx.decode_base64(e.Value)
-            for kind in ipairs({'rules', 'restrictions', 'job'}) do
+            for j, kind in ipairs({'rules', 'restrictions', 'job'}) do
                 if svcs[#svcs] == kind then
                     local c, err = cjson.decode(v)
                     if c then
                         ngx.shared.rp_cache:set(kind .. '/' .. svc, cmessagepack.pack(c))
                     else
-                        ngx.log(ngx.ERR, "cannot decode json", err)
+                        fluentd.error("consul", {message="cannot decode json", err=err})
                     end
                 end
             end
@@ -89,7 +90,7 @@ function _M.kv_update(premature, myindex)
                         end
                     end
                 else
-                    ngx.log(ngx.ERR, "cannot decode json", err)
+                    fluentd.error("consul", {message="cannot decode json", err=err})
                 end
             end
             if svcs[#svcs] == 'type' then

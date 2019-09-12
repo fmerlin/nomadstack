@@ -7,6 +7,11 @@
         name: "{{uwsgi.image}}"
         tag: "{{uwsgi.tag}}"
         push: yes
+    - name: set vault policy for my app
+      vault_policy:
+        name: uwsgi
+        capabilities:
+          secret/uwsgi/*: ["create"]
     - name: init consul
       consul_kv_tree:
         path: openresty
@@ -27,19 +32,20 @@
               type: uwsgi
               job.json:
                 image: "{{uwsgi.image}}"
-                disk: 100
+                disk: 300
                 cpu: 300
                 mbits: 1
                 memory: 300
+                policies: ["uwsgi"]
                 uwsgi:
-                  threadss: 2
+                  threads: 2
                   processes: 2
               restrictions.json:
                 /app:
                   - admin
               versions.json:
-                prod: v1
-                dev: v1
+                prod: "{{uwsgi.tag}}"
+                dev: "{{uwsgi.tag}}"
           geo:
             zone:
               dev: default

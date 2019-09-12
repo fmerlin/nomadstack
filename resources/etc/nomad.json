@@ -30,7 +30,7 @@
     "token": "{{ _consul_key.data }}"
   },
   "vault": {
-    "enabled": false,
+    "enabled": true,
     "address": "http://127.0.0.1:{{ vault.port }}",
     "token": "{{ _vault_key.data }}"
   },
