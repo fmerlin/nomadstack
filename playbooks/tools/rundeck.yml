@@ -18,6 +18,8 @@
                 volumes:
                   - "local:/home/rundeck/server/data"
                   - "/home/{{ ansible_user }}/.ssh://home/rundeck/.ssh"
+              Env:
+                RUNDECK_GRAILS_URL: "http://{{ rundeck.host }}:{{ rundeck.port }}"
               Resources:
                 CPU: 100
                 MemoryMB: 800

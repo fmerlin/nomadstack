@@ -66,6 +66,7 @@ function _M.gen_job(service, version, config)
                                  Config = {
                                      image = config.image .. ':' .. version,
                                      network_mode = "host",
+                                     entrypoint = {"uwsgi", "--ini", "/secrets/uwsgi.ini"},
                                      logging = {
                                          type = "fluentd",
                                          config = {
@@ -78,7 +79,8 @@ function _M.gen_job(service, version, config)
                                  Env = {
                                      CONSUL = os.getenv("CONSUL"),
                                      REDIS = os.getenv("REDIS"),
-                                     FLUENTD = os.getenv("FLUENTD")
+                                     FLUENTD = os.getenv("FLUENTD"),
+                                     UWSGI_VASSAL_SOCKET = "/run/uwsgi/*.socket"
                                  },
                                  Meta = {
                                      version = version

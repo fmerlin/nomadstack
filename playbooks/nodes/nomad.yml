@@ -63,18 +63,6 @@
               policy: read
             quota:
               policy: read
-      - name: set vault policy for nomad
-        vault_policy:
-          token: "{{ _vault_key }}"
-          name: nomad-server
-          capabilities:
-            auth/token/create/nomad-cluster: ["update"]
-            auth/token/roles/nomad-cluster: ["read"]
-            auth/token/lookup-self: ["read"]
-            auth/token/lookup: ["update"]
-            auth/token/revoke-accessor: ["update"]
-            auth/token/renew-self: ["update"]
-            sys/capabilities-self: ["update"]
       - name: add nomad secrets engine
         shell: "vault secrets enable nomad"
         environment:

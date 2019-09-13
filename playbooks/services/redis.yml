@@ -34,7 +34,7 @@
                       - fluentd-async-connect: "true"
                 Resources:
                   CPU: 100
-                  MemoryMB: 500
+                  MemoryMB: 100
                   Networks:
                     - MBits: 1
                       ReservedPorts:

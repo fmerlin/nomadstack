@@ -31,7 +31,7 @@
                   INSTALL4J_ADD_VM_PARAMS: "-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1g  -Djava.util.prefs.userRoot=/nexus-data/javaprefs"
                 Resources:
                   CPU: 1000
-                  MemoryMB: 2048
+                  MemoryMB: 1536
                   Networks:
                     - MBits: 1
                       ReservedPorts:

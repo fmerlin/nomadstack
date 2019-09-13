@@ -75,13 +75,12 @@
 {{ range service "elasticsearch|passing,warning" }}
 [OUTPUT]
     Name  es
-    Match *
+    Match **
     Host  {{ .Address }}
     Port  {{ .Port }}
     Logstash_Format on
     Type  generic
-{{ end }}
-
+{{ else }}
 [OUTPUT]
     Name  file
     Match docker.*
@@ -91,3 +90,4 @@
     Name  file
     Match openresty.*
     Path /log/fluentbit-openresty.log
+{{ end }}

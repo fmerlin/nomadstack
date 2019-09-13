@@ -71,7 +71,7 @@ def main():
                 ))
             )),
             TaskGroups=dict(type='list', elements='dict', options=dict(
-                Name=dict(type='str'),
+                Name=dict(required=True, type='str'),
                 Count=dict(type='int'),
                 Migrate=dict(type='dict', options=dict(
                     HealthCheck=dict(type='str'),
@@ -99,7 +99,7 @@ def main():
                     Sticky=dict(type='bool')
                 )),
                 Tasks=dict(type='list', elements='dict', options=dict(
-                    Name=dict(type='str'),
+                    Name=dict(required=True, type='str'),
                     Driver=dict(type='str'),
                     Artifacts=dict(type='list', elements='dict', options=dict(
                         GetterSource=dict(type='str'),
@@ -107,19 +107,28 @@ def main():
                         GetterOptions=dict(type='dict')
                     )),
                     Config=dict(type='dict', options=dict(
-                        image=dict(type='str'),
+                        image=dict(required=True, type='str'),
                         port_map=dict(type='list'),
                         network_mode=dict(type='str'),
                         volumes=dict(type='list', elements='str'),
                         dns_servers=dict(type='list', elements='str'),
+                        dns_search_domains=dict(type='list', elements='str'),
+                        dns_options=dict(type='list', elements='str'),
+                        extra_hosts=dict(type='list', elements='str'),
                         command=dict(type='str'),
+                        args=dict(type='list', elements='str'),
                         work_dir=dict(type='str'),
                         volume_driver=dict(type='str'),
+                        labels=dict(type='dict'),
+                        shm_size=dict(type='int'),
+                        storage_opt=dict(type='dict'),
+                        security_opt=dict(type='list', elements='str'),
+                        entrypoint=dict(type='list', elements='str'),
                         devices=dict(type='list', elements='dict'),
                         mounts=dict(type='list', elements='dict', options=dict(
-                            type=dict(type='str'),
-                            target=dict(type='str'),
-                            source=dict(type='str'),
+                            type=dict(required=True, type='str', choices=['bind', 'tmpfs', 'volume']),
+                            target=dict(required=True, type='str'),
+                            source=dict(required=True, type='str'),
                             readonly=dict(type='bool'),
                             bind_options=dict(type='dict', options=dict(
                                 propagation=dict(type='str')
@@ -132,9 +141,8 @@ def main():
                                 size=dict(type='int')
                             ))
                         )),
-                        args=dict(type='list', elements='str'),
                         logging=dict(type='dict', options=dict(
-                            type=dict(type='str'),
+                            type=dict(required=True, type='str'),
                             config=dict(type='list', elements='dict', options={
                                 "fluentd-address": dict(type='str'),
                                 "fluentd-async-connect": dict(type='bool'),
@@ -164,16 +172,16 @@ def main():
                         VaultGrace=dict(type='int'),
                     )),
                     Services=dict(type='list', elements='dict', options=dict(
-                        Id=dict(type='str'),
-                        Name=dict(type='str'),
+                        Name=dict(required=True, type='str'),
                         Tags=dict(type='list', elements='str'),
+                        CanaryTags=dict(type='list', elements='str'),
                         Meta=dict(type='dict'),
                         PortLabel=dict(type='str'),
-                        AddressMode=dict(type='str'),
+                        AddressMode=dict(type='str', choices=['auto','driver','host']),
                         Checks=dict(type='list', elements='dict', options=dict(
                             Id=dict(type='str'),
                             Name=dict(type='str'),
-                            Type=dict(type='str'),
+                            Type=dict(type='str', choices=['script','http','tcp']),
                             Command=dict(type='str'),
                             Args=dict(type='list'),
                             Headers=dict(type='dict'),
@@ -202,8 +210,18 @@ def main():
                             )),
                         )),
                     )),
-                    Leader=dict(type='bool')
+                    Leader=dict(type='bool'),
+                    VolumeMount=dict(type='list', elements='dict', options=dict(
+                        Source=dict(type='str'),
+                        Destination=dict(type='str'),
+                        ReadOnly = dict(type='bool'),
+                    ))
                 )),
+                Volume=dict(type='list', elements='dict', options=dict(
+                    Type=dict(type='str', choices=['host']),
+                    ReadOnly=dict(type='bool'),
+                    Config=dict(type='dict')
+                ))
             )),
             Type=dict(type='str'),
             Update=dict(type='dict', options=dict(

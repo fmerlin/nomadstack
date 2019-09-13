@@ -1,0 +1,32 @@
+- hosts: localhost
+  tasks:
+    - name: deploy job
+      nomad_job:
+        ID: "corebot"
+        Name: "corebot"
+        Datacenters:
+         - "{{consul.datacenter}}"
+        Type: "service"
+        TaskGroups:
+          - Name: "corebot"
+            Tasks:
+            - Name: "corebot"
+              Driver: "docker"
+              Config:
+                image: "{{corebot.image}}"
+                network_mode: "host"
+                volumes:
+                  - "secrets/actions.yml:/opt/corebot/actions.yml"
+              Env:
+                SLACK_AUTH_TOKEN: "{{ slack.auth_token }}"
+                SLACK_CHANNEL_NAME: "{{ slack.channel_name }}"
+                RUNDECK_API_TOKEN: "{{ rundeck.token }}"
+                RUNDECK_BASE_URL: "http://{{rundeck.host}}:{{rundeck.port}}"
+              Templates:
+                - EmbeddedTmpl: "{{ lookup('file','../../resources/go-templates/actions.yml.ctmpl') }}"
+                  DestPath: "secrets/actions.yml"
+                  Change_mode: "signal"
+                  Change_signal: "SIGHUP"
+              Resources:
+                CPU: 100
+                MemoryMB: 800

@@ -1,15 +1,17 @@
+import json
+import os
 import time
-
+from threading import Thread
 import consul
 
 
 class ConsulConfig:
-    def __init__(self, key, host, port, token):
+    def __init__(self, key):
+        self.config = json.loads(os.environ['CONSUL'])
         self.key = key
-        self.host = host
-        self.port = port
-        self.token = token
+        self.token = os.environ['CONSUL_HTTP_TOKEN']
         self.data = dict()
+        self.t = None
 
     def _recursive_set(self, d, keys, value):
         k = keys[0]
@@ -29,7 +31,7 @@ class ConsulConfig:
         index = 0
         nb_root_keys = len(self.key.split('/'))
         while True:
-            c = consul.Consul(host=self.host, port=self.port, token=self.token)
+            c = consul.Consul(host=self.config.host, port=self.config.port, token=self.token)
             try:
                 while True:
                     index, items = c.kv.get(self.key, recurse=True, index=index)
@@ -37,3 +39,13 @@ class ConsulConfig:
                         self._recursive_set(self.data, item['key'].split('/')[nb_root_keys:], item['Value'])
             except:
                 time.sleep(10)
+
+    def start(self):
+        self.t = Thread(target=self.load)
+        self.t.start()
+
+    def join(self):
+        self.t.join()
+
+    def __getitem__(self, item):
+        return self.data.get(item)

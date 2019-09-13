@@ -20,7 +20,7 @@ save 300 10
 save 60 10000
 
 # Arbitrary Parameters
-maxmemory {{ key "redis/maxmemory" }}
+maxmemory {{ keyOrDefault "redis/maxmemory" "100000"}}
 maxmemory-policy allkeys-lru
 slowlog-log-slower-than 10000
 slowlog-max-len 128

@@ -23,7 +23,7 @@
                   - "local:/var/lib/grafana"
               Resources:
                 CPU: 100
-                MemoryMB: 300
+                MemoryMB: 100
                 Networks:
                 - MBits: 1
                   ReservedPorts:
