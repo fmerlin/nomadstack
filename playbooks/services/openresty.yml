@@ -1,4 +1,6 @@
 - hosts: localhost
+  vars:
+    redis_secret: "{{ lookup('hashi_vault','secret/data/redis') }}"
   tasks:
     - name: build docker
       docker_image:
@@ -42,7 +44,7 @@
                   - fluentd-async-connect: "true"
               Env:
                 OAUTH: ' {"client_id": "", "client_secret": "", "scope": "300", "response_type": "token", "signin_url": "", "details_url": ""}'
-                REDIS: ' {"host": "127.0.0.1", "port": {{redis.port}}, "timeout": 300, "idle": 3600, "pool_size": 3}'
+                REDIS: ' {"host": "redis.service.consul", "port": {{redis.port}}, "timeout": 300, "idle": 3600, "pool_size": 3, "password": "{{ redis_secret.password }}"}'
                 RIAK: ' {"host": "127.0.0.1", "port": {{riak.port}}, "timeout": 300, "key": ""}'
                 CONSUL: ' {"host": "127.0.0.1", "port": {{consul.port}}, "timeout": 300}'
                 FLUENTD: ' {"host": "127.0.0.1", "port": {{fluentbit.port}}, "timeout": 300}'

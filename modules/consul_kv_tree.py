@@ -55,7 +55,8 @@ def main():
         changed = kv_put(c, path, data, module.check_mode)
         module.exit_json(changed=changed)
     except Exception as e:
-        module.fail_json(msg=str(e))
+        module.fail_json(msg=str(e), path=module.params.get('path'),
+            data=module.params.get('data'), type=type(e))
 
 
 if __name__ == '__main__':

@@ -4,12 +4,17 @@
       consul_kv_tree:
         path: "redis"
         data:
-          maxmemory: "400mb"
+          maxmemory: "{{redis.memory}}mb"
     - name: set private settings
       vault_secret:
         path: "redis"
         secret:
           password: 'totoleheros'
+    - name: set vault policy for redis
+      vault_policy:
+        name: "redis-read"
+        capabilities:
+          secret/data/redis: ["read"]
     - name: deploy job
       nomad_job:
         ID: redis
@@ -22,7 +27,7 @@
               - Name: "redis"
                 Driver: "docker"
                 Config:
-                  image: "redis"
+                  image: "{{redis.image}}"
                   network_mode: "host"
                   volumes:
                     - "secrets/redis.conf:/usr/local/etc/redis/redis.conf"
@@ -34,7 +39,7 @@
                       - fluentd-async-connect: "true"
                 Resources:
                   CPU: 100
-                  MemoryMB: 100
+                  MemoryMB: "{{redis.memory}}"
                   Networks:
                     - MBits: 1
                       ReservedPorts:
@@ -45,6 +50,10 @@
                     DestPath: "secrets/redis.conf"
                     ChangeMode: "signal"
                     ChangeSignal: "SIGHUP"
+                Vault:
+                  Policies: ["redis-read"]
+                  ChangeMode: "signal"
+                  ChangeSignal: "SIGHUP"
                 Services:
                   - Name: "redis"
                     PortLabel: "redis"

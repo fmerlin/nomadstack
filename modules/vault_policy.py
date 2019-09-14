@@ -10,7 +10,8 @@ def main():
             token_file=dict(type='str'),
             name=dict(type='str'),
             capabilities=dict(type='dict')
-        )
+        ),
+        supports_check_mode=True
     )
 
     try:
@@ -33,7 +34,8 @@ def main():
         )
         module.exit_json(changed=True)
     except Exception as e:
-        module.fail_json(msg=e.args[0])
+        module.fail_json(msg=e.args[0], name=module.params.get('name'),
+            capabilities=module.params.get('capabilities'), type=type(e))
 
 
 if __name__ == '__main__':

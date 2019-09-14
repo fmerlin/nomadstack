@@ -7,13 +7,13 @@
   "client_addr": "0.0.0.0",
   "enable_syslog": true,
   "recursors": ["8.8.8.8", "208.67.222.222"],
-  "bootstrap_expect": {{ groups['servers']|length }},
+  "bootstrap_expect": {{ groups['servers'] |length }},
 {% if 'servers' in group_names %}
   "server": true,
   "ui": true,
-  "start_join_wan": ["{{ groups['servers'] | join('","')}}"],
+  "start_join_wan": ["{{ groups['servers'] | map('extract', hostvars, ['ansible_host']) | join('","')}}"],
 {% else %}
-  "start_join": ["{{ groups['servers'] | join('","')}}"],
+  "start_join": ["{{ groups['servers'] | map('extract', hostvars, ['ansible_host']) | join('","')}}"],
 {% endif %}
   "telemetry": {
     "prometheus_retention_time": "30s",
@@ -23,7 +23,7 @@
   "check" : {
     "id": "check_node",
     "name": "check ram/disk node",
-    "args": ["/usr/local/consul/check_node.py", "{{ consul.checks | join('","')}}"],
+    "args": ["/var/lib/consul/check_node.py", "{{ consul.checks | join('","')}}"],
     "interval": "10s",
     "status": "passing"
   },
@@ -43,6 +43,9 @@
   "addresses": {
     "dns": "127.0.0.1",
     "http": "0.0.0.0"
+  },
+  "node_meta": {
+    "groups": "{{ group_names | join(',') }}"
   }
 }
 

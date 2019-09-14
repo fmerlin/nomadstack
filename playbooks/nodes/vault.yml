@@ -9,10 +9,8 @@
         user: name=vault group=docker
       - name: create directories
         file: path=/var/lib/vault state=directory mode=0777 owner=vault group=docker
-      - name: download vault
-        get_url: url="{{vault.url}}/{{vault.file}}" dest="/tmp/{{vault.file}}"
-      - name: unarchive vault
-        unarchive: src="/tmp/{{vault.file}}" dest=/usr/local/bin/ mode=0755 copy=no
+      - name: get vault
+        unarchive: src="{{vault.url}}/{{vault.file}}" dest=/usr/local/bin/ mode=0755 remote_src=yes
       - name: copy systemd unit
         copy: src="../../resources/etc/systemd/system/vault.service" dest=/etc/systemd/system/vault.service mode=0755 owner=vault group=docker
       - name: create fake unseal script
@@ -24,10 +22,15 @@
         template: src="../../resources/etc/vault.json" dest=/etc/vault.json mode=0755 owner=vault group=docker
       - name: start vault
         systemd: name=vault state=started daemon_reload=yes enabled=yes
+      - name: fetch syslog
+        fetch: src=/var/log/syslog dest=/vagrant/fetch
+      - name: fetch json
+        fetch: src=/etc/vault.json dest=/vagrant/fetch
       - name: init vault
         uri:
-          url: "http://localhost:{{vault.port}}/v1/sys/init"
+          url: "http://127.0.0.1:{{vault.port}}/v1/sys/init"
           method: PUT
+          return_content: yes
           body_format: json
           body:
             secret_shares: 1
@@ -44,24 +47,26 @@
         command: "sudo /usr/local/bin/vault_unseal"
       - name: Set VAULT_TOKEN
         lineinfile:
-          dest: /etc/environment.d/docker
+          path: /etc/environment.d/docker
           state: present
           regexp: 'VAULT_TOKEN'
           line: 'export VAULT_TOKEN={{_vault.json.root_token}}'
       - name: Set VAULT_AGENT_ADDR
         lineinfile:
-          dest: /etc/environment
+          path: /etc/environment
           state: present
-          regexp: '^VAULT_AGENT_ADDR'
+          regexp: 'VAULT_AGENT_ADDR'
           line: 'VAULT_AGENT_ADDR=http://127.0.0.1:{{vault.port}}'
       - name: install python vault
         pip: name=hvac
-      - name: add user pass
-        shell: "vault auth enable userpass"
-        environment:
-          VAULT_TOKEN: "{{_vault.json.root_token}}"
-      - name: add consul secrets engine
-        shell: "vault secrets enable consul"
+      - name: configure vault
+        shell: "{{ item }}"
+        with_items:
+          - "vault auth enable userpass"
+          - "vault write auth/userpass/users/{{vault.user}} password={{vault.password}} policies=admins"
+          - "vault secrets enable consul"
+          - "vault secrets enable -version=2 -path=secret kv"
+          - "vault secrets enable pki"
         environment:
           VAULT_TOKEN: "{{_vault.json.root_token}}"
       when: not stat_result.stat.exists

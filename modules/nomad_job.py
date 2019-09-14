@@ -8,7 +8,7 @@ from nomad.api.exceptions import BaseNomadException
 def strip(d):
     if type(d) == dict:
         res = dict()
-        for k, v in d.iteritems():
+        for k, v in d.items():
             if v is not None:
                 res[k] = strip(v)
         return res
@@ -23,7 +23,7 @@ def strip(d):
 
 def filter(d, fields):
     res = dict()
-    for k, v in d.iteritems():
+    for k, v in d.items():
         if v is not None and k not in fields:
             res[k] = strip(v)
     return res
@@ -117,9 +117,14 @@ def main():
                         extra_hosts=dict(type='list', elements='str'),
                         command=dict(type='str'),
                         args=dict(type='list', elements='str'),
+                        cap_add=dict(type='list', elements='str'),
+                        cap_drop=dict(type='list', elements='str'),
                         work_dir=dict(type='str'),
                         volume_driver=dict(type='str'),
                         labels=dict(type='dict'),
+                        ulimit=dict(type='dict'),
+                        sysctl=dict(type='dict'),
+                        privileged=dict(type='bool'),
                         shm_size=dict(type='int'),
                         storage_opt=dict(type='dict'),
                         security_opt=dict(type='list', elements='str'),
@@ -255,7 +260,7 @@ def main():
             res = n.job.register_job(name, data)
             module.exit_json(changed=True, **res)
     except BaseNomadException as e:
-        module.fail_json(status_code=e.nomad_resp.status_code, msg=e.nomad_resp.text, params=strip(module.params))
+        module.fail_json(status_code=e.nomad_resp.status_code, msg=e.nomad_resp.text, params=strip(module.params), type=type(e))
 
 
 if __name__ == '__main__':

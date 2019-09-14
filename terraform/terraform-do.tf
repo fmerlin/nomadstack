@@ -2,6 +2,7 @@ provider "digitalocean" {
   # You need to set this in your .bashrc
   # export DIGITALOCEAN_TOKEN="Your API TOKEN"
   #
+  token = "3a5c3a09bc1660875bb58220e23384100e199aaf2b7c8066a4a894fad68593df"
 }
 
 resource "digitalocean_droplet" "mywebserver" {
@@ -41,4 +42,35 @@ resource "digitalocean_record" "mywebserver" {
   type   = "A"
   name   = "mywebserver"
   value  = digitalocean_droplet.mywebserver.ipv4_address
+}
+
+resource "digitalocean_firewall" "mywebserver" {
+  name = "only-22-80-and-443"
+
+  droplet_ids = [
+    "${digitalocean_droplet.mywebserver.id}"]
+
+  inbound_rule {
+    protocol = "tcp"
+    port_range = "22"
+    source_addresses = [
+      "192.168.1.0/24",
+      "2002:1:2::/48"]
+  }
+
+  inbound_rule {
+    protocol = "tcp"
+    port_range = "80"
+    source_addresses = [
+      "0.0.0.0/0",
+      "::/0"]
+  }
+
+  inbound_rule {
+    protocol = "tcp"
+    port_range = "443"
+    source_addresses = [
+      "0.0.0.0/0",
+      "::/0"]
+  }
 }

@@ -21,7 +21,7 @@ def conv(val):
     return float(val)
 
 
-def check(c: list, free: float, percent: float):
+def check(c, free, percent):
     global ret
     threshold_f = conv(c[0])
     threshold_p = conv(c[1])

@@ -1,5 +1,0 @@
-consul:
-  options: -ui -server -client=0.0.0.0 -join-wan={{groups['servers']|join(' -join-wan=') }} -bootstrap-expect {{groups['servers']|length}}
-
-nomad_job:
-  server: "true"

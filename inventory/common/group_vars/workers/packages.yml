@@ -1,5 +1,0 @@
-consul:
-  options: "-join={{groups['servers']|join(' -join=') }}"
-
-nomad_job:
-  server: "false"

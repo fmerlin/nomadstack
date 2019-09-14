@@ -33,6 +33,7 @@ function _M.connect()
     redis_srv:set_timeout(_M.timeout) -- 1 sec
     redis_srv:set_keepalive(_M.idle, _M.pool_size)
     check("failed to connect: ", redis_srv:connect(_M.host, _M.port))
+    check("failed to authenticate: ", redis_srv:auth(_M.password))
     check("failed to subscribe: ", redis_srv:subscribe(ngx.var.service))
 
     -- WebSockets

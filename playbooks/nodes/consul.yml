@@ -12,15 +12,11 @@
       - name: add user consul
         user: name=consul group=docker
       - name: create directories
-        file: path=/usr/local/consul state=directory mode=0777 owner=consul group=docker
-      - name: create directories
         file: path=/var/lib/consul state=directory mode=0777 owner=consul group=docker
-      - name: download consul
-        get_url: url="{{consul.url}}/{{consul.file}}" dest="/tmp/{{consul.file}}"
       - name: install zip
         apt: name=zip
-      - name: unarchive consul
-        unarchive: src="/tmp/{{consul.file}}" dest=/usr/local/bin/ mode=0755 copy=no
+      - name: get consul
+        unarchive: src="{{consul.url}}/{{consul.file}}" dest=/usr/local/bin/ mode=0755 remote_src=yes
       - name: copy systemd unit
         template: src="../../resources/etc/systemd/system/consul.service" dest=/etc/systemd/system/  mode=0755 owner=consul group=docker
       - name: copy consul config
@@ -32,11 +28,11 @@
       - name: install python hcl
         pip: name=pyhcl
       - name: copy script
-        copy: src=../../resources/python/check_node.py dest=/usr/local/consul/check_node.py mode=0755
+        copy: src=../../resources/python/check_node.py dest=/var/lib/consul/check_node.py mode=0755
       - name: start consul
         systemd: name=consul state=started daemon_reload=yes enabled=yes
       - name: bootstrap acl
-        uri: url="http://localhost:{{consul.port}}/v1/acl/bootstrap" method=PUT status=200 return_content=yes body_format=json
+        uri: url="http://127.0.0.1:{{consul.port}}/v1/acl/bootstrap" method=PUT return_content=yes
         register: _consul
         until: _consul.status == 200
         retries: 30
@@ -45,15 +41,15 @@
         copy: content="{{_consul.json.SecretID}}" dest=/etc/consul.key mode=0640 group=docker
       - name: Set CONSUL_HTTP_TOKEN
         lineinfile:
-          dest: /etc/environment.d/docker
+          path: /etc/environment.d/docker
           state: present
           regexp: 'CONSUL_HTTP_TOKEN'
           line: 'export CONSUL_HTTP_TOKEN={{_consul.json.SecretID}}'
       - name: Set CONSUL_HTTP_ADDR
         lineinfile:
-          dest: /etc/environment
+          path: /etc/environment
           state: present
-          regexp: '^CONSUL_HTTP_ADDR'
+          regexp: 'CONSUL_HTTP_ADDR'
           line: 'CONSUL_HTTP_ADDR=127.0.0.1:{{consul.port}}'
       - name: Set consul policies
         consul_acl:
@@ -72,6 +68,8 @@
         copy: content="{{_consul_anonymous.token}}" dest=/etc/consul_anonymous.key mode=0644 group=docker
       - name: set default token
         shell: "consul acl set-agent-token --token={{_consul.json.SecretID}} default {{_consul_anonymous.token}}"
+      - name: set agent token
+        shell: "consul acl set-agent-token --token={{_consul.json.SecretID}} agent {{_consul.json.SecretID}}"
       - name: copy resolved.conf
         copy: src=../../resources/etc/systemd/resolved.conf dest=/etc/systemd/resolved.conf mode=0644
       - name: restarting resolved

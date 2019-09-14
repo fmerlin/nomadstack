@@ -8,7 +8,7 @@ from nomad.api.exceptions import BaseNomadException
 def strip(d):
     if type(d) == dict:
         res = dict()
-        for k, v in d.iteritems():
+        for k, v in d.items():
             if v is not None:
                 res[k] = strip(v)
         return res
@@ -40,7 +40,8 @@ def main():
                     policy=dict(type='str')
                 ))
             ))
-        )
+        ),
+        supports_check_mode=True
     )
 
     try:
@@ -63,7 +64,7 @@ def main():
             ))
             module.exit_json(changed=True)
     except BaseNomadException as e:
-        module.fail_json(status_code=e.nomad_resp.status_code, msg=e.nomad_resp.text)
+        module.fail_json(status_code=e.nomad_resp.status_code, msg=e.nomad_resp.text, type=type(e))
 
 if __name__ == '__main__':
     main()

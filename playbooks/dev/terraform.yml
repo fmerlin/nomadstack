@@ -1,7 +1,0 @@
-- hosts: servers
-  become: True
-  tasks:
-    - name: download terraform
-      get_url: url="{{terraform.url}}/{{terraform.file}}" dest="/tmp/{{terraform.file}}"
-    - name: unarchive terraform
-      unarchive: src="/tmp/{{terraform.file}}" dest=/usr/local/bin/ mode=0755 copy=no
