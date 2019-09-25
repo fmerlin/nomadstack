@@ -27,8 +27,8 @@
       template: src=../../resources/etc/docker/daemon.json dest=/etc/docker/ owner="{{ ansible_user }}" group=docker mode=0640
     - name: create /etc/systemd/system/docker.service.d
       file: path=/etc/systemd/system/docker.service.d state=directory group=docker mode=0750
-    - name: copy docker override
-      template: src=../../resources/etc/systemd/system/docker.service.d/override.conf dest=/etc/systemd/system/docker.service.d/ owner="{{ ansible_user }}" group=docker mode=0640
+#    - name: copy docker override
+#      template: src=../../resources/etc/systemd/system/docker.service.d/override.conf dest=/etc/systemd/system/docker.service.d/ owner="{{ ansible_user }}" group=docker mode=0640
     - name: restart docker
       service: name=docker state=restarted
     - name: copy docker profile

@@ -5,21 +5,14 @@ local fluentd = require("rp.utils.fluentd")
 local nomad = require("rp.utils.nomad")
 local balancer = require("ngx.balancer")
 local cjson = require("cjson")
+local misc = require("rp.utils.misc")
 
 local _M = {}
-
-function _M.uuid()
-    local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-    return string.gsub(template, '[xy]', function(c)
-        local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
-        return string.format('%x', v)
-    end)
-end
 
 function _M.load_session()
     fluentd.debug('app', 'loading session')
     ngx.ctx.args = ngx.req.get_uri_args()
-    ngx.var.x_request_id = _M.uuid()
+    ngx.var.x_request_id = misc.uuid()
     local session = ngx.var.cookie_x_session
     if session ~= nil then
         ngx.ctx.session = session
@@ -40,7 +33,7 @@ end
 function _M.save_session()
     fluentd.debug('app', 'save_session')
     if ngx.ctx.session == nil then
-        ngx.ctx.session = _M.uuid()
+        ngx.ctx.session = misc.uuid()
     end
     local t = ngx.ctx.user.exp - ngx.now()
     _M.add_cookie("x_session", session, t)
@@ -49,7 +42,7 @@ end
 
 function _M.should_auth()
     fluentd.debug('app', 'should_auth')
-    local s = ngx.var.service
+    local s = ngx.var.endpoint
     local u = ngx.var.uri:sub(s:len() + 2)
     local restrictions = ngx.shared.rp_cache:get('restrictions/' .. s)
     if restrictions then
@@ -58,7 +51,7 @@ function _M.should_auth()
             if u:sub(1, k:len()) == k then
                 if ngx.ctx.user.group == nil then
                     return true
-                elseif _M.does_not_equal(ngx.ctx.user.group, v) then
+                elseif misc.does_not_equal(ngx.ctx.user.group, v) then
                     ngx.exit(ngx.HTTP_UNAUTHORIZED)
                 end
             end
@@ -79,7 +72,7 @@ function _M.load_settings()
         else
             settings = cmessagepack.unpack(settings)
         end
-        if _M.check(settings.input or {}) then
+        if misc.check_map(settings.input or {}, ngx.ctx.user) then
             ngx.ctx.settings = settings.output
         else
             fluentd.error("riak", { message = "api key not valid", err = err, key = key })
@@ -87,11 +80,11 @@ function _M.load_settings()
         end
     else
         ngx.ctx.api_key = ngx.var.remote_addr .. '-' .. ngx.var.service
-        local rules = ngx.shared.rp_cache:get('rules/' .. ngx.var.service)
+        local rules = ngx.shared.rp_cache:get('rules/' .. ngx.var.endpoint)
         if rules then
             rules = cmessagepack.unpack(rules)
             for i, rule in ipairs(rules) do
-                if _M.check(rule.input or {}) then
+                if misc.check_map(rule.input or {}, ngx.ctx.user) then
                     ngx.ctx.settings = rule.output
                     return
                 end
@@ -101,41 +94,9 @@ function _M.load_settings()
     end
 end
 
-function _M.does_not_equal(a, b)
-    if a and b then
-        if type(a) == table then
-            for i, v in ipairs(a) do
-                if _M.does_not_equal(v, b) then
-                    return true
-                end
-            end
-            return false
-        end
-        if type(b) == table then
-            for i, v in ipairs(b) do
-                if _M.does_not_equal(a, v) then
-                    return true
-                end
-            end
-            return false
-        end
-        return a ~= b
-    end
-    return false
-end
-
-function _M.check(map)
-    for k2, v2 in pairs(map) do
-        if _M.does_not_equal(ngx.ctx.user[k2], v2) then
-            return false
-        end
-    end
-    return true
-end
-
 function _M.set_upstream()
     fluentd.debug('app', 'set_upstream')
-    local versions = ngx.shared.rp_cache:get('versions/' .. ngx.var.service)
+    local versions = ngx.shared.rp_cache:get('versions/' .. ngx.var.endpoint)
     if versions then
         versions = cmessagepack.unpack(versions)
         ngx.ctx.version = versions[ngx.ctx.settings.version or '']
@@ -181,12 +142,13 @@ end
 
 function _M.balance(is_sticky)
     fluentd.debug('app', 'balance')
+    local endpoint = ngx.var.endpoint
     local service = ngx.var.service
     local up = is_sticky and ngx.var.cookie_x_upstream
     local mn = 1000000
     local host
     local hosts
-    local type = ngx.shared.rp_cache:get('type/' .. service)
+    local type = ngx.shared.rp_cache:get('type/' .. endpoint)
     local try = 0
 
     while host == nil do
@@ -196,7 +158,7 @@ function _M.balance(is_sticky)
                 return ngx.exit(ngx.HTTP_BAD_GATEWAY)
             end
             if try == 1 and type == 'uwsgi' then
-                nomad.add_job(service, ngx.ctx.version)
+                nomad.add_uwsgi_job(service, ngx.ctx.version)
             end
             ngx.sleep(1)
         end
@@ -254,7 +216,7 @@ function _M.add_cookie(name, value, expires)
 end
 
 function _M.cors()
-    if ngx.var.service ~= '' then
+    if ngx.var.endpoint ~= '' then
         fluentd.debug('app', 'cors')
         local origin = ngx.req.get_headers()["Origin"]
         if origin then
@@ -269,7 +231,7 @@ function _M.cors()
 end
 
 function _M.end_request()
-    if ngx.var.service ~= '' then
+    if ngx.var.endpoint ~= '' then
         fluentd.debug('app', 'end_request')
         local body = ngx.ctx.resp_body
         if ngx.ctx.host then

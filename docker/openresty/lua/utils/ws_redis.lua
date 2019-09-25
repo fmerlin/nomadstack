@@ -1,55 +1,70 @@
 local cjson = require("cjson")
-local redis = require("resty.redis")
 local websocket = require("resty.websocket.server")
 local fluentd = require("rp.utils.fluentd")
+local redis = require("rp.utils.redis")
+local celery = require("rp.utils.celery")
+local misc = require("rp.utils.misc")
+local cmessagepack = require("MessagePack")
 
 local _M = cjson.decode(os.getenv("REDIS") or "{}")
 
 function _M.connect()
-    local check, subscribe
-    function check(msg, res, err)
+    local service = ngx.var.service
+    local version = ngx.ctx.version
+    local ws_srv = websocket:new {
+        timeout = 5000,
+        max_payload_len = 65535
+    }
+    local config = ngx.shared.rp_cache:get('redis/' .. ngx.var.endpoint)
+    if config then
+        config = cmessagepack.unpack(config)
+    else
+        config = {}
+    end
+
+    local obj = {
+        config = config,
+        celery_queue = service .. '-' .. version,
+        send = function(data)
+            if data then
+                if _M.encoding == 'json' then
+                    ws_srv:send_text(cjson.encode(data))
+                else
+                    ws_srv:send_binary(cmessagepack.pack(data))
+                end
+            end
+        end
+    }
+    celery.create(obj)
+    redis.create(obj)
+
+    local hosts = ngx.shared.rp_cache:get('upstreams/' .. service)
+    local host
+    if hosts then
+        hosts = hosts and cmessagepack.unpack(hosts) or {}
+        for i, h in ipairs(hosts) do
+            if h.version == version and misc.is_in('celery', h.tags) then
+                host = h
+                break
+            end
+        end
+        if host == nil then
+            nomad.add_celery_job(service, version)
+        end
+    end
+
+    local check = function(msg, res, err)
         if not res then
-            fluentd.error('', {message=msg, err=err})
-            return ngx.exit(444)
+            fluentd.error('redis issue', { message = msg, err = err })
+            obj.send({ action = 'error', message = msg, err = err })
         end
         return res
     end
 
-    -- Redis
-    function subscribe(redis_srv, ws_srv)
-        while true do
-            local res, err = redis_srv:read_reply()
-            if res then
-                local f = io.open(res[3], "rb")
-                if f then
-                    local data = f:read("*all")
-                    ws_srv:send_binary(data)
-                end
-            end
-        end
-    end
-
-    local redis_srv = redis:new()
-    redis_srv:set_timeout(_M.timeout) -- 1 sec
-    redis_srv:set_keepalive(_M.idle, _M.pool_size)
-    check("failed to connect: ", redis_srv:connect(_M.host, _M.port))
-    check("failed to authenticate: ", redis_srv:auth(_M.password))
-    check("failed to subscribe: ", redis_srv:subscribe(ngx.var.service))
-
-    -- WebSockets
-    local ws_srv = check("failed to create a new websocket: ", websocket:new {
-        timeout = 5000,
-        max_payload_len = 65535
-    })
-
-    -- Loop
-    ngx.thread.spawn(subscribe, redis_srv, ws_srv)
-
-
     while true do
         local data, typ, err = ws_srv:recv_frame()
         if ws_srv.fatal then
-            fluentd.error("redis", {message="failed to receive frame", err=err})
+            fluentd.error("redis", { message = "failed to receive frame", err = err })
             return ngx.exit(444)
         end
         if not data then
@@ -61,13 +76,13 @@ function _M.connect()
         elseif typ == "pong" then
             fluentd.debug("redis", "client ponged")
         elseif typ == "text" then
-            check("failed to send text: ", redis_srv:publish(ngx.var.service, data))
+            obj.execute(cjson.decode(data))
         elseif typ == "binary" then
-            check("failed to send data: ", redis_srv:publish(ngx.var.service, data))
+            obj.execute(cmessagepack.unpack(data))
         end
-
     end
     ws_srv:send_close()
 end
+
 
 return _M

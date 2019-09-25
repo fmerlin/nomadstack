@@ -2,22 +2,14 @@ local cjson = require("cjson")
 local cmessagepack = require("MessagePack")
 local pgmoon = require('pgmoon.arrays')
 local pgmoon_arrays = require('pgmoon')
+local misc = require('rp.utils.misc')
 
 local _M = cjson.decode(os.getenv("POSTGRES") or {})
-
-function _M.is_in(val, lst)
-    for i, e in ipairs(lst) do
-        if e == val then
-            return true
-        end
-    end
-    return false
-end
 
 function _M.format(config, values)
     local conds = {}
     for k,v in pairs(values) do
-        if _M.is_in(k, config.fields) then
+        if misc.is_in(k, config.fields) then
             if type(v) == 'string' then
                 table.insert(conds, k .. '="' .. v .. '"')
             else
@@ -35,7 +27,7 @@ function _M.pg_crud()
     local res
     local m = ngx.var.http_method
     local pg = pgmoon.new(_M)
-    local config = cmessagepack.unpack(ngx.shared.rp_cache:get('config/' .. ngx.var.service))
+    local config = cmessagepack.unpack(ngx.shared.rp_cache:get('config/' .. ngx.var.endpoint))
     pg:connect()
     if m == 'GET' then
         res = pg:query('select ' .. table.concat(config.fields,',') .. ' from ' .. config.table .. ' where ' .. table.concat(_M.format(config, ngx.ctx.args),' and '))
@@ -45,7 +37,7 @@ function _M.pg_crud()
         local data = {}
         for i,b in ipairs(body) do
             for k,v in pairs(b) do
-                if _M.is_in(k, config.fields) then
+                if misc.is_in(k, config.fields) then
                     table.insert(fields, k)
                     table.insert(data, v)
                 end
@@ -64,7 +56,7 @@ end
 
 function _M.pg_query()
     local pg = pgmoon.new(_M)
-    local config = cmessagepack.unpack(ngx.shared.rp_cache:get('config/' .. ngx.var.service))
+    local config = cmessagepack.unpack(ngx.shared.rp_cache:get('config/' .. ngx.var.endpoint))
     local res = pg:query(config.query)
     pg:keepalive()
     return res

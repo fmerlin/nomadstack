@@ -7,7 +7,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.proxy.no_proxy = "localhost,127.0.0.1,192.168.56.10"
   end
   config.vm.box = "ubuntu/disco64"
-  config.disksize.size = "50GB"
+  if Vagrant.has_plugin?("vagrant-disksize")
+    config.disksize.size = "50GB"
+  end
   config.vm.provider :virtualbox do |v|
     v.gui = false
     v.memory = 4096
@@ -18,13 +20,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.hostname = "server1"
   config.vm.network 'private_network', ip: '192.168.56.10'
   config.vm.provision :shell, inline: "echo 'azerty' > /tmp/vault_pass"
-  config.vm.provision "ansible_local" do |ansible|
+  config.vm.provision "ansible" do |ansible|
     ansible.inventory_path = "/vagrant/inventory/local"
     ansible.limit = "all"
     ansible.become = true
     ansible.playbook = "/vagrant/playbooks/nodes/main.yml"
     ansible.config_file = "/vagrant/ansible.cfg"
     ansible.verbose = true
-    ansible.install = true
+    # ansible.install = true
   end
 end

@@ -75,7 +75,7 @@ function _M.kv_update(premature, myindex)
             local svcs = _M.split(e.Key,"/")
             local svc = svcs[#svcs - 1]
             local v = ngx.decode_base64(e.Value)
-            for j, kind in ipairs({'rules', 'restrictions', 'job'}) do
+            for j, kind in ipairs({'rules', 'restrictions', 'job', 'redis', 'versions'}) do
                 if svcs[#svcs] == kind then
                     local c, err = cjson.decode(v)
                     if c then
@@ -85,25 +85,18 @@ function _M.kv_update(premature, myindex)
                     end
                 end
             end
-            if svcs[#svcs] == 'versions' then
-                if ngx.shared.rp_cache:get('versions/' .. svc) == nil then
-                    fluentd.info("consul", {message="new endpoint", service=svc})
-                end
-                local c, err = cjson.decode(v)
-                if c then
-                    ngx.shared.rp_cache:set('versions/' .. svc, cmessagepack.pack(c))
-                else
-                    fluentd.error("consul", {message="cannot decode json", err=err})
-                end
-            end
             if svcs[#svcs] == 'type' then
+                fluentd.info("consul", {message="new endpoint", service=svc})
                 ngx.shared.rp_cache:set('type/' .. svc, v)
                 if v == 'uwsgi' or v == 'proxy' then
                     table.insert(swaggers, '/' .. svc .. '/swagger.json')
                 end
-                if ngx.shared.rp_cache:get('upstreams/' .. svc) == nil then
-                    ngx.shared.rp_cache:set('upstreams/' .. svc, cmessagepack.pack({}))
-                    ngx.timer.at(0, _M.service_update, svc, '0')
+            end
+            if svcs[#svcs] == 'service' then
+                ngx.shared.rp_cache:set('service/' .. svc, v)
+                if ngx.shared.rp_cache:get('upstreams/' .. v) == nil then
+                    ngx.shared.rp_cache:set('upstreams/' .. v, cmessagepack.pack({}))
+                    ngx.timer.at(0, _M.service_update, v, '0')
                 end
             end
         end

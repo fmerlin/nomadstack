@@ -4,4 +4,11 @@
   "log-level": "error",
   "labels": ["groups={{group_names}}"],
   "insecure-registries" : ["{{docker.registry}}"]
+{{ if docker.tls }}
+    ,"tls": true,
+    "tlscacert": "/etc/{{docker.ca}}.crt",
+    "tlscert": "/etc/{{docker.key}}.crt",
+    "tlskey": "/etc/{{docker.key}}.key",
+    "tlsverify": true,
+{{ endif }}
 }

@@ -1,0 +1,84 @@
+- hosts: localhost
+  tasks:
+    - name: build docker
+      docker_image:
+        path: /vagrant/example/python-backend
+        name: "{{myapp.image}}"
+        tag: "{{myapp.tag}}"
+#        push: yes
+    - name: set vault policy for my app
+      vault_policy:
+        name: myapp
+        capabilities:
+          secret/myapp/*: ["create"]
+    - name: init consul
+      consul_kv_tree:
+        path: openresty/endpoints
+        data:
+          toto:
+            rules.json:
+              - input:
+                  remote_addr: 0.0.0.0
+                output:
+                  version: prod
+                  max_req: 100
+                  max_time: 60
+              - output:
+                  version: dev
+                  max_req: 10
+                  max_time: 60
+            type: uwsgi
+            service: toto
+            job.json:
+              image: "{{myapp.image}}"
+              disk: 300
+              cpu: 300
+              mbits: 1
+              memory: 100
+              policies: ["myapp"]
+              uwsgi:
+                threads: 2
+                processes: 2
+            restrictions.json:
+              /app:
+                - admin
+            versions.json:
+              prod: "{{myapp.tag}}"
+              dev: "{{myapp.tag}}"
+          toto_ws:
+            rules.json:
+              - input:
+                  remote_addr: 0.0.0.0
+                output:
+                  version: prod
+                  max_req: 100
+                  max_time: 60
+                  redis_db: 0
+              - output:
+                  version: dev
+                  max_req: 10
+                  max_time: 60
+                  redis_db: 1
+            type: redis_ws
+            service: toto_ws
+            redis:
+              lpush_queues: ["toto_ws-{{myapp.tag}}"]
+              psubscribe_channels: ["celery-meta-task-*"]
+            job.json:
+              image: "{{myapp.image}}"
+              disk: 300
+              cpu: 300
+              mbits: 1
+              memory: 100
+              policies: ["myapp"]
+              celery:
+                task_annotations:
+                  celery_app.add:
+                    rate_limit: "10/s"
+                processes: 2
+            restrictions.json:
+              /app:
+                - admin
+            versions.json:
+              prod: "{{myapp.tag}}"
+              dev: "{{myapp.tag}}"

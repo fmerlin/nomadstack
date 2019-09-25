@@ -1,6 +1,9 @@
 docker:
   port: 2375
   registry: "nexus.service.consul:5000"
+  tls: false
+  ca: docker_ca
+  key: test
 
 consul:
   url: https://releases.hashicorp.com/consul/1.6.0
@@ -70,7 +73,8 @@ terraform:
   file: terraform_0.12.5_linux_amd64.zip
 
 myapp:
-  image: "{{docker.registry}}/paas/myapp"
+#  image: "{{docker.registry}}/paas/myapp"
+  image: "paas/myapp"
   tag: v1
 
 redis:

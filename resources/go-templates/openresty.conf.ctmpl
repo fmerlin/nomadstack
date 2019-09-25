@@ -53,14 +53,16 @@ geo ${{ $v }} {
     {{ end }}
     {{ range $key, $pairs := tree (print $openresty "/endpoints/") | byKey -}}
     {{- $type := (keyOrDefault  (print $openresty "/endpoints/" $key "/type") "") -}}
+    {{- $service := (keyOrDefault  (print $openresty "/endpoints/" $key "/service") "") -}}
         location /{{ $key }}/ {
+        set $endpoint "{{ $key }}";
+        set $proxy_to "";
+        set $x_request_id "";
+        set $service "{{ $service }}";
         {{- if (eq $type "proxy") }}
             proxy_cache_revalidate on;
             proxy_cache proxy_cache;
             proxy_cache_key $request_uri;
-            set $proxy_to "";
-            set $x_request_id "";
-            set $service "{{ $key }}";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
@@ -75,17 +77,11 @@ geo ${{ $v }} {
             uwsgi_cache_revalidate on;
             uwsgi_cache uwsgi_cache;
             uwsgi_cache_key $request_uri;
-            set $proxy_to "";
-            set $x_request_id "";
-            set $service "{{ $key }}";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
             uwsgi_param X_REQUEST_ID $x_request_id;
             uwsgi_pass $proxy_to;
         {{- end -}}
         {{- if (eq $type "grpc") -}}
-            set $proxy_to "";
-            set $x_request_id "";
-            set $service "{{ $key }}";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
             grpc_bind $remote_addr transparent;
             grpc_set_header Upgrade $http_upgrade;
@@ -96,13 +92,10 @@ geo ${{ $v }} {
             grpc_pass grpc://$proxy_to;
         {{- end -}}
         {{- if (eq $type "file") -}}
-            set $service "{{ $key }}";
-            set $proxy_to "";
             access_by_lua_file "/usr/local/openresty/lualib/rp/directives/access_service.lua";
             root $proxy_to;
         {{- end -}}
         {{- if (eq $type "redis") -}}
-            set $service "{{ $key }}";
             lua_check_client_abort on;
             content_by_lua_file "/usr/local/openresty/lualib/rp/directives/content_redis.lua";
         {{- end }}
@@ -110,7 +103,6 @@ geo ${{ $v }} {
             limit_except POST {
                deny all;
             }
-            set $service "{{ $key }}";
             content_by_lua_file '/usr/local/openresty/lualib/rp/directives/content_fluentd.lua';
         {{- end }}
         }

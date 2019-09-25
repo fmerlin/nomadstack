@@ -38,7 +38,9 @@
   },
   "dns_config": {
     "allow_stale": true,
-    "max_stale": "87600h"
+    "max_stale": "87600h",
+    "service_ttl": { "*" : "5s" },
+    "node_ttl": "5s"
   },
   "addresses": {
     "dns": "127.0.0.1",
