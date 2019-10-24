@@ -1,4 +1,5 @@
 {
+  "_comment": "export DIGITALOCEAN_TOKEN=<Your API TOKEN>",
   "provisioners": [
     {
       "type": "ansible",
@@ -10,7 +11,7 @@
   "builders": [
     {
       "type": "digitalocean",
-      "api_token": "3a5c3a09bc1660875bb58220e23384100e199aaf2b7c8066a4a894fad68593df",
+      "api_token": "{{env `DIGITALOCEAN_TOKEN`}}",
       "image": "ubuntu-18-04-x64",
       "region": "fra1",
       "size": "512mb",

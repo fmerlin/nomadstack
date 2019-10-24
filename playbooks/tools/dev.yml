@@ -4,8 +4,8 @@
     - name: get packer
       unarchive: src="{{packer.url}}/{{packer.file}}" dest=/usr/local/bin/ mode=0755 remote_src=yes
     - name: exec packer
-      shell: "packer build ../../packer/packer-do.json"
+      shell: "packer build ../../digitalocean/packer.json"
     - name: get terraform
       unarchive: src="{{terraform.url}}/{{terraform.file}}" dest=/usr/local/bin/ mode=0755 remote_src=yes
     - name: exec terraform
-      shell: "terraform ../../terraform/terraform-do.tf"
+      shell: "terraform ../../digitalocean/terraform.tf"

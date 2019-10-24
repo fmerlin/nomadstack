@@ -1,6 +1,6 @@
-#Hashicorp Stack Demo
+#Nomad Stack Demo
 
-####! Work in progress !
+Install Docker, Consul, Vault and Nomad
 
 #### Download and install chocolatey (windows package manager)
    * from [http://chocolatey.org]
@@ -29,16 +29,20 @@
 
 #### Start a service from commmand line
     vagrant ssh
-    ansible-playbook -i inventory/local playbooks/service/<< name of the service >>.yml
+    ansible-playbook -i inventory/local playbooks/services/<< name of the service >>.yml
 
 where the name of the service can be:
-
-   * elasticsearch: document-oriented database [https://www.elastic.co/guide/index.html]
-   * grafana: dashboard [https://grafana.com/docs/]
-   * nexus: artifact repository [https://help.sonatype.com/repomanager3]
-   * prometheus: TS database for metrics [https://prometheus.io/docs/introduction/overview/]
+   * openresty: reverse proxy [https://openresty.org/en/]
    * redis: in-memory KV store [https://redis.io/documentation]
    * postgres: SQL database [https://www.postgresql.org/docs/]
    * pgbouncer: connection pooling/load balancer for postgres [https://pgbouncer.github.io/usage.html]
-   * openresty: reverse proxy [https://openresty.org/en/]
-   * uwsgi: python application server [https://uwsgi-docs.readthedocs.io/en/latest/]
+   * fluentbit: log forwarder [https://www.fluentbit.io]
+   * elasticsearch: document-oriented database [https://www.elastic.co/guide/index.html]
+   * prometheus: TS database for metrics [https://prometheus.io/docs/introduction/overview/]
+
+    vagrant ssh
+    ansible-playbook -i inventory/local playbooks/tools/<< name of the tool >>.yml
+
+where the name of the tool can be:
+   * grafana: dashboard [https://grafana.com/docs/]
+   * nexus: artifact repository [https://help.sonatype.com/repomanager3]

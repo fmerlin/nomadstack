@@ -1,8 +1,6 @@
 provider "digitalocean" {
   # You need to set this in your .bashrc
   # export DIGITALOCEAN_TOKEN="Your API TOKEN"
-  #
-  token = "3a5c3a09bc1660875bb58220e23384100e199aaf2b7c8066a4a894fad68593df"
 }
 
 resource "digitalocean_droplet" "mywebserver" {
