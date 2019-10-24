@@ -1,4 +1,4 @@
-#Nomad Stack Demo
+## Nomad Stack Demo
 
 Install Docker, Consul, Vault and Nomad
 
