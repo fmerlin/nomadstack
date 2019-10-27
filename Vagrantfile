@@ -20,7 +20,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.hostname = "server1"
   config.vm.network 'private_network', ip: '192.168.56.10'
   config.vm.provision :shell, inline: "echo 'azerty' > /tmp/vault_pass"
-  config.vm.provision "ansible" do |ansible|
+  config.vm.provision "ansible-local" do |ansible|
     ansible.inventory_path = "/vagrant/inventory/local"
     ansible.limit = "all"
     ansible.become = true

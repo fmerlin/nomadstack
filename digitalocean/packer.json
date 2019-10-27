@@ -2,7 +2,7 @@
   "_comment": "export DIGITALOCEAN_TOKEN=<Your API TOKEN>",
   "provisioners": [
     {
-      "type": "ansible-local",
+      "type": "ansible",
       "playbook_file": "playbooks/nodes/main.yml",
       "groups": ["servers"],
       "inventory_directory": "inventory/local"
