@@ -62,37 +62,13 @@
           - "vault write auth/userpass/users/{{vault.user}} password={{vault.password}} policies=admins"
           - "vault secrets enable consul"
           - "vault secrets enable -version=2 -path=secret kv"
-          - "vault secrets enable pki"
+          - "vault secrets enable -path=pki/docker pki"
+          - 'vault secrets tune -max-lease-ttl=87600h pki/docker'
+          - 'vault write -field=certificate pki/docker/root/generate/internal common_name="Docker Root CA" ttl=87600h >/etc/docker-ca.crt'
+          - 'vault write pki/docker/roles/server max_ttl=26280h ttl=8760h allowed_domains=example.com allow_localhost=true allow_ip_sans=true allow_bare_domains=true allow_subdomains=true server_flag=true client_flag=false key_usage=DigitalSignature,KeyEncipherment ou="Docker Daemon"'
+          - 'vault write pki/docker/roles/client max_ttl=8760h ttl=720h allow_any_name=true enforce_hostnames=false server_flag=false client_flag=true key_usage=DigitalSignature ou="Docker Client" no_store=true'
+#          - 'vault write pki/docker/issue/server common_name=example.com alt_names=localhost ip_sans="127.0.0.1" ttl=8760h"'
         environment:
           VAULT_TOKEN: "{{_vault.json.root_token}}"
       when: not stat_result.stat.exists
 
-vault secrets tune -max-lease-ttl=87600h pki/docker
-vault write -field certificate pki/docker/root/generate/internal common_name="Docker Root CA" ttl=87600h
-vault write pki/docker/roles/server \
-    max_ttl=26280h \
-    ttl=8760h  \
-    allowed_domains=example.com \
-    allow_localhost=true \
-    allow_ip_sans=true \
-    allow_bare_domains=true \
-    allow_subdomains=true \
-    server_flag=true \
-    client_flag=false \
-    key_usage=DigitalSignature,KeyEncipherment \
-    ou="Docker Daemon"
-vault write pki/docker/roles/client \
-    max_ttl=8760h \
-    ttl=720h  \
-    allow_any_name=true \
-    enforce_hostnames=false \
-    server_flag=false \
-    client_flag=true \
-    key_usage=DigitalSignature \
-    ou="Docker Client" \
-    no_store=true
-vault write pki/docker/issue/server \
-  common_name=example.com \
-  alt_names=localhost \
-  ip_sans="127.0.0.1"\
-  ttl=8760h

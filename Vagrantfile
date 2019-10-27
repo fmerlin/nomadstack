@@ -16,11 +16,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.cpus = 8
     v.customize ["modifyvm", :id, "--nictype1", "virtio"]
   end
+  config.vm.provider "hyperv" do |v|
+    v.vm_integration_services = {
+      guest_service_interface: true,
+      CustomVMSRV: true
+    }
+  end
   config.vm.boot_timeout = 600
   config.vm.hostname = "server1"
   config.vm.network 'private_network', ip: '192.168.56.10'
-  config.vm.provision :shell, inline: "echo 'azerty' > /tmp/vault_pass"
-  config.vm.provision "ansible-local" do |ansible|
+  config.vm.provision :shell, inline: "echo 'azerty' >/home/vagrant/.vault_pass"
+  config.vm.provision "ansible_local" do |ansible|
     ansible.inventory_path = "/vagrant/inventory/local"
     ansible.limit = "all"
     ansible.become = true
